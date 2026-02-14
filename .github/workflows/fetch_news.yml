@@ -1,0 +1,54 @@
+name: Fetch Top News
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"   # every 30 minutes
+  workflow_dispatch:         # allow manual run
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Fetch news
+        run: |
+          python3 - << 'EOF'
+          import requests, json
+          from datetime import datetime, timezone
+
+          API_KEY = "YOUR_NEWSDATA_KEY"
+          url = f"https://newsdata.io/api/1/latest?apikey={API_KEY}&language=en"
+
+          r = requests.get(url, timeout=30)
+          data = r.json()
+
+          articles = data.get("results", [])[:10]
+
+          out = {
+              "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+              "articles": []
+          }
+
+          for a in articles:
+              out["articles"].append({
+                  "title": a.get("title"),
+                  "link": a.get("link"),
+                  "source": a.get("source_id"),
+                  "pubDate": a.get("pubDate")
+              })
+
+          with open("data/top_news.json", "w", encoding="utf-8") as f:
+              json.dump(out, f, ensure_ascii=False, indent=2)
+
+          EOF
+
+      - name: Commit updated news
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add data/top_news.json
+          git commit -m "Auto update top news" || echo "No changes"
+          git push
