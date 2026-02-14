@@ -1,0 +1,23 @@
+{
+  "generated_at_utc": "2026-02-14T18:00:00Z",
+  "articles": [
+    {
+      "title": "Global tensions rise after diplomatic breakdown",
+      "link": "https://example.com/1",
+      "source": "Reuters",
+      "pubDate": "2026-02-14"
+    },
+    {
+      "title": "UN warns of worsening humanitarian crisis",
+      "link": "https://example.com/2",
+      "source": "BBC",
+      "pubDate": "2026-02-14"
+    },
+    {
+      "title": "Oil markets surge amid conflict fears",
+      "link": "https://example.com/3",
+      "source": "Al Jazeera",
+      "pubDate": "2026-02-14"
+    }
+  ]
+}
