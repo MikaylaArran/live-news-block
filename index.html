@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live News</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    body {
+      margin: 0;
+      background: #0b0f14;
+      font-family: Arial, Helvetica, sans-serif;
+      color: white;
+      display: flex;
+      justify-content: center;
+      padding: 40px;
+    }
+
+    .news-block {
+      width: 1000px;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0f141b;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .header {
+      display: flex;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      background: #0c1118;
+    }
+
+    .title {
+      font-weight: bold;
+      letter-spacing: 2px;
+      font-size: 18px;
+    }
+
+    .live {
+      margin-left: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      background: red;
+      border-radius: 50%;
+      box-shadow: 0 0 10px red;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 10px;
+      padding: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      overflow-x: auto;
+      background: #0c1118;
+    }
+
+    .tab {
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 8px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      white-space: nowrap;
+      opacity: 0.7;
+      user-select: none;
+    }
+
+    .tab.active {
+      background: red;
+      border-color: red;
+      opacity: 1;
+    }
+
+    .player {
+      position: relative;
+      width: 100%;
+      padding-top: 56.25%;
+      background: black;
+    }
+
+    iframe {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .hint {
+      padding: 10px 16px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.2);
+    }
+  </style>
+</head>
+
+<body>
+  <div class="news-block">
+    <div class="header">
+      <div class="title">LIVE NEWS</div>
+      <div class="live">
+        <div class="dot"></div>
+        LIVE
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs"></div>
+
+    <div class="player">
+      <iframe id="player"
+        allow="autoplay; encrypted-media; picture-in-picture"
+        allowfullscreen>
+      </iframe>
+    </div>
+
+    <div class="hint">
+      If a channel isn’t live right now, YouTube may show “This video is unavailable”. Switch tabs.
+      Autoplay requires mute; unmute inside the player.
+    </div>
+  </div>
+
+  <script>
+    // Stable approach: embed the channel's current live stream (no video IDs).
+    // Format: https://www.youtube.com/embed/live_stream?channel=CHANNEL_ID
+
+    const channels = [
+      { name: "SKY NEWS", channelId: "UCoMdktPbSTixAyNGwb-UYkQ" },
+      { name: "NBC NEWS", channelId: "UCeY0bbntWzzVIaj2z3QigXg" },
+      { name: "CBS NEWS", channelId: "UC8p1vwvWtl6T73JiExfWs1g" },
+      { name: "ABC NEWS", channelId: "UCBi2mrWuNuyYy4gbM6fU18Q" },
+      { name: "DW NEWS", channelId: "UCknLrEdhRCp1aegoMqRaCZg" },
+      { name: "AL JAZEERA", channelId: "UCNye-wNBqNL5ZzHSJj3l8Bg" },
+      { name: "FRANCE 24", channelId: "UCQfwfsi5VrQ8yKZ-UWmAEFg" },
+      { name: "EURONEWS", channelId: "UCSrZ3UV4jOidv8ppoVuvW9Q" }
+    ];
+
+    const tabs = document.getElementById("tabs");
+    const player = document.getElementById("player");
+
+    function liveEmbedUrl(channelId) {
+      const url = new URL("https://www.youtube.com/embed/live_stream");
+      url.searchParams.set("channel", channelId);
+      url.searchParams.set("autoplay", "1");
+      url.searchParams.set("mute", "1");        // needed for autoplay
+      url.searchParams.set("playsinline", "1"); // nicer on mobile
+      return url.toString();
+    }
+
+    function setChannel(channelId, tabEl) {
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      tabEl.classList.add("active");
+      player.src = liveEmbedUrl(channelId);
+    }
+
+    channels.forEach((c, i) => {
+      const tab = document.createElement("div");
+      tab.className = "tab";
+      tab.innerText = c.name;
+      tab.onclick = () => setChannel(c.channelId, tab);
+      tabs.appendChild(tab);
+
+      if (i === 0) setChannel(c.channelId, tab);
+    });
+  </script>
+</body>
+</html>
