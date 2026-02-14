@@ -6,22 +6,35 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    body {
-      margin: 0;
-      background: #0b0f14;
+    :root{
+      --bg:#0b0f14;
+      --panel:#0f141b;
+      --panel2:#0c1118;
+      --border:rgba(255,255,255,.12);
+      --text:#e8eef7;
+      --muted:rgba(232,238,247,.65);
+      --accent:#ff3b3b;
+    }
+
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 50% -20%, rgba(255,255,255,.08), transparent),
+                  var(--bg);
+      color:var(--text);
       font-family: Arial, Helvetica, sans-serif;
-      color: white;
       padding: 40px;
-      display: flex;
-      justify-content: center;
+      display:flex;
+      justify-content:center;
     }
 
     /* ---------- DASHBOARD LAYOUT ---------- */
-    .dashboard {
+    .dashboard{
       width: 1200px;
-      display: grid;
+      display:grid;
       grid-template-columns: 2fr 1fr;
       gap: 18px;
+      min-height: 0;
     }
 
     @media (max-width: 1000px){
@@ -30,7 +43,7 @@
     }
 
     /* ---------- LIVE NEWS (PLAYER) ---------- */
-    .news-block {
+    .news-block{
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 12px;
       overflow: hidden;
@@ -38,30 +51,30 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
 
-    .header {
-      display: flex;
-      align-items: center;
+    .header{
+      display:flex;
+      align-items:center;
       padding: 14px 16px;
       border-bottom: 1px solid rgba(255,255,255,0.15);
       background: #0c1118;
+      gap: 12px;
     }
 
-    .title {
+    .title{
       font-weight: bold;
       letter-spacing: 2px;
       font-size: 18px;
     }
 
-    .live {
-      margin-left: 12px;
-      display: flex;
-      align-items: center;
+    .live{
+      display:flex;
+      align-items:center;
       gap: 6px;
       font-size: 14px;
       opacity: 0.8;
     }
 
-    .dot {
+    .dot{
       width: 10px;
       height: 10px;
       background: red;
@@ -69,16 +82,16 @@
       box-shadow: 0 0 10px red;
     }
 
-    .tabs {
-      display: flex;
+    .tabs{
+      display:flex;
       gap: 10px;
       padding: 10px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
-      overflow-x: auto;
+      overflow-x:auto;
       background: #0c1118;
     }
 
-    .tab {
+    .tab{
       border: 1px solid rgba(255,255,255,0.15);
       padding: 8px 14px;
       border-radius: 8px;
@@ -89,27 +102,27 @@
       user-select: none;
     }
 
-    .tab.active {
+    .tab.active{
       background: red;
       border-color: red;
       opacity: 1;
     }
 
-    .player {
+    .player{
       position: relative;
       width: 100%;
       padding-top: 56.25%;
       background: black;
     }
 
-    iframe {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      border: none;
+    iframe{
+      position:absolute;
+      top:0; left:0;
+      width:100%; height:100%;
+      border:none;
     }
 
-    .hint {
+    .hint{
       padding: 10px 16px;
       font-size: 12px;
       color: rgba(255,255,255,0.65);
@@ -117,25 +130,30 @@
       background: rgba(0,0,0,0.2);
     }
 
-    /* ---------- RIGHT COLUMN STACK (Instability + Top News) ---------- */
+    /* ---------- RIGHT COLUMN STACK ---------- */
     .right-col{
-      display: flex;
-      flex-direction: column;
+      display:flex;
+      flex-direction:column;
       gap: 18px;
       min-height: 0;
     }
 
-    /* ---------- INSTABILITY PANEL (reused styling) ---------- */
+    /* ---------- PANEL (Instability + Top News) ---------- */
     .instability-block{
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 12px;
       overflow: hidden;
       background: #0f141b;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-      display: flex;
-      flex-direction: column;
-      min-height: 540px;
+
+      display:flex;
+      flex-direction:column;
+      min-height: 0; /* critical for inner scrolling */
     }
+
+    /* FIXED HEIGHTS so the list scrolls INSIDE */
+    #instabilityPanel{ height: 540px; }
+    #topNewsPanel{ height: 340px; }
 
     .instability-header{
       padding: 14px 16px;
@@ -145,6 +163,10 @@
       align-items:center;
       justify-content:space-between;
       gap: 10px;
+
+      position: sticky; /* header stays while list scrolls */
+      top: 0;
+      z-index: 5;
     }
 
     .instability-title{
@@ -171,14 +193,52 @@
       white-space: nowrap;
     }
 
+    /* THIS is the scroll container */
     .instability-list{
       padding: 12px;
       display:flex;
       flex-direction:column;
       gap: 10px;
-      overflow: auto;
+
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
     }
 
+    /* Optional fade like your reference */
+    .instability-list{
+      -webkit-mask-image: linear-gradient(to bottom,
+        transparent 0px,
+        black 18px,
+        black calc(100% - 18px),
+        transparent 100%);
+      mask-image: linear-gradient(to bottom,
+        transparent 0px,
+        black 18px,
+        black calc(100% - 18px),
+        transparent 100%);
+    }
+
+    /* Scrollbar styling */
+    .instability-list::-webkit-scrollbar{ width: 10px; }
+    .instability-list::-webkit-scrollbar-track{
+      background: rgba(255,255,255,0.04);
+      border-radius: 999px;
+    }
+    .instability-list::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,0.18);
+      border-radius: 999px;
+    }
+    .instability-list::-webkit-scrollbar-thumb:hover{
+      background: rgba(255,255,255,0.28);
+    }
+    .instability-list{
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255,255,255,0.18) rgba(255,255,255,0.04);
+    }
+
+    /* ---------- CARDS ---------- */
     .country-card{
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 10px;
@@ -259,7 +319,7 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
-    /* ---------- TOP NEWS LIST STYLES ---------- */
+    /* ---------- TOP NEWS LIST ---------- */
     .news-item{
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 10px;
@@ -272,9 +332,7 @@
       text-decoration: none;
     }
 
-    .news-item a:hover{
-      text-decoration: underline;
-    }
+    .news-item a:hover{ text-decoration: underline; }
 
     .news-meta{
       margin-top: 6px;
@@ -315,7 +373,7 @@
     <div class="right-col">
 
       <!-- INSTABILITY SIDE -->
-      <div class="instability-block">
+      <div class="instability-block" id="instabilityPanel">
         <div class="instability-header">
           <div class="instability-title">INSTABILITY INDEX</div>
           <div class="meta-right">
@@ -329,7 +387,7 @@
       </div>
 
       <!-- TOP 10 NEWS -->
-      <div class="instability-block" style="min-height: 340px;">
+      <div class="instability-block" id="topNewsPanel">
         <div class="instability-header">
           <div class="instability-title">TOP 10 NEWS</div>
           <div class="meta-right">
@@ -384,27 +442,13 @@
       if (i === 0) setChannel(c.channelId, tab);
     });
 
-    /* ---------- INSTABILITY INDEX (Severity + live JSON) ---------- */
+    /* ---------- INSTABILITY INDEX ---------- */
     function severityFor(score){
       if (score >= 80) return { label: "CRITICAL", color: "#ef4444" };
       if (score >= 65) return { label: "HIGH",     color: "#f59e0b" };
       if (score >= 50) return { label: "ELEVATED", color: "#eab308" };
       return              { label: "MODERATE", color: "#22c55e" };
     }
-
-    // Fallback demo data (used if data/instability.json isn't available yet)
-    const DEMO_INSTABILITY_DATA = [
-      { country: "Yemen", score: 85, U: 75, C: 15, S: 60, I: 50 },
-      { country: "Sudan", score: 83, U: 70, C: 25, S: 55, I: 45 },
-      { country: "Syria", score: 82, U: 80, C: 20, S: 50, I: 40 },
-      { country: "Afghanistan", score: 78, U: 60, C: 10, S: 40, I: 45 },
-      { country: "Israel", score: 76, U: 70, C: 0,  S: 30, I: 54 },
-      { country: "Ukraine", score: 70, U: 70, C: 0,  S: 0,  I: 0  },
-      { country: "Russia", score: 68, U: 40, C: 60, S: 20, I: 35 },
-      { country: "Iran", score: 66, U: 55, C: 40, S: 30, I: 20 },
-      { country: "Venezuela", score: 64, U: 35, C: 45, S: 30, I: 20 },
-      { country: "South Africa", score: 58, U: 40, C: 10, S: 25, I: 18 }
-    ];
 
     async function loadInstabilityFromJson(){
       const res = await fetch("data/instability.json?ts=" + Date.now());
@@ -466,18 +510,23 @@
       });
     }
 
-    // Try real data first. If not available yet, show demo.
     (async () => {
       try {
         const payload = await loadInstabilityFromJson();
         renderInstability(payload.countries || [], payload);
       } catch (e) {
-        console.warn("Using demo instability data:", e.message);
-        renderInstability(DEMO_INSTABILITY_DATA, null);
+        console.warn("Instability not available yet:", e.message);
+        document.getElementById("instabilityUpdated").textContent = "No data yet";
+        document.getElementById("instabilityList").innerHTML = `
+          <div class="country-card">
+            <strong>Instability data not found.</strong>
+            <div class="breakdown">Create <code>data/instability.json</code> then refresh.</div>
+          </div>
+        `;
       }
     })();
 
-    /* ---------- TOP 10 NEWS (from data/top_news.json) ---------- */
+    /* ---------- TOP 10 NEWS ---------- */
     async function loadTopNewsFromJson(){
       const res = await fetch("data/top_news.json?ts=" + Date.now());
       if (!res.ok) throw new Error("top_news.json not found");
@@ -496,11 +545,11 @@
         updated.textContent = "No timestamp";
       }
 
-      const articles = payload?.articles || [];
+      const articles = payload?.articles || payload?.items || payload?.results || [];
       if (!articles.length){
         const empty = document.createElement("div");
         empty.className = "news-item";
-        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">Check your GitHub Action + API key.</div>`;
+        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">Check your JSON file.</div>`;
         list.appendChild(empty);
         return;
       }
@@ -510,9 +559,9 @@
         item.className = "news-item";
 
         const title = a.title || "Untitled";
-        const link = a.link || "";
-        const source = a.source || "";
-        const pubDate = a.pubDate || "";
+        const link = a.link || a.url || "";
+        const source = a.source || a.source_id || "";
+        const pubDate = a.pubDate || a.published_at || a.publishedAt || "";
 
         item.innerHTML = `
           <div>
@@ -533,13 +582,11 @@
         renderTopNews(payload);
       } catch (e) {
         console.warn("Top news not available yet:", e.message);
-        const updated = document.getElementById("topNewsUpdated");
-        const list = document.getElementById("topNewsList");
-        updated.textContent = "No data yet";
-        list.innerHTML = `
+        document.getElementById("topNewsUpdated").textContent = "No data yet";
+        document.getElementById("topNewsList").innerHTML = `
           <div class="news-item">
             <strong>Top news data not found.</strong>
-            <div class="news-meta">Create <code>data/top_news.json</code> (or run your GitHub Action) then refresh.</div>
+            <div class="news-meta">Create <code>data/top_news.json</code> then refresh.</div>
           </div>
         `;
       }
