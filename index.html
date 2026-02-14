@@ -6,35 +6,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
-    :root{
-      --bg:#0b0f14;
-      --panel:#0f141b;
-      --panel2:#0c1118;
-      --border:rgba(255,255,255,.12);
-      --text:#e8eef7;
-      --muted:rgba(232,238,247,.65);
-      --accent:#ff3b3b;
-    }
-
-    *{box-sizing:border-box}
-    body{
-      margin:0;
-      background: radial-gradient(1200px 600px at 50% -20%, rgba(255,255,255,.08), transparent),
-                  var(--bg);
-      color:var(--text);
+    body {
+      margin: 0;
+      background: #0b0f14;
       font-family: Arial, Helvetica, sans-serif;
+      color: white;
       padding: 40px;
-      display:flex;
-      justify-content:center;
+      display: flex;
+      justify-content: center;
     }
 
     /* ---------- DASHBOARD LAYOUT ---------- */
-    .dashboard{
+    .dashboard {
       width: 1200px;
-      display:grid;
+      display: grid;
       grid-template-columns: 2fr 1fr;
       gap: 18px;
-      min-height: 0;
     }
 
     @media (max-width: 1000px){
@@ -43,7 +30,7 @@
     }
 
     /* ---------- LIVE NEWS (PLAYER) ---------- */
-    .news-block{
+    .news-block {
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 12px;
       overflow: hidden;
@@ -51,30 +38,30 @@
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
     }
 
-    .header{
-      display:flex;
-      align-items:center;
+    .header {
+      display: flex;
+      align-items: center;
       padding: 14px 16px;
       border-bottom: 1px solid rgba(255,255,255,0.15);
       background: #0c1118;
-      gap: 12px;
     }
 
-    .title{
+    .title {
       font-weight: bold;
       letter-spacing: 2px;
       font-size: 18px;
     }
 
-    .live{
-      display:flex;
-      align-items:center;
+    .live {
+      margin-left: 12px;
+      display: flex;
+      align-items: center;
       gap: 6px;
       font-size: 14px;
       opacity: 0.8;
     }
 
-    .dot{
+    .dot {
       width: 10px;
       height: 10px;
       background: red;
@@ -82,16 +69,16 @@
       box-shadow: 0 0 10px red;
     }
 
-    .tabs{
-      display:flex;
+    .tabs {
+      display: flex;
       gap: 10px;
       padding: 10px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
-      overflow-x:auto;
+      overflow-x: auto;
       background: #0c1118;
     }
 
-    .tab{
+    .tab {
       border: 1px solid rgba(255,255,255,0.15);
       padding: 8px 14px;
       border-radius: 8px;
@@ -102,27 +89,27 @@
       user-select: none;
     }
 
-    .tab.active{
+    .tab.active {
       background: red;
       border-color: red;
       opacity: 1;
     }
 
-    .player{
+    .player {
       position: relative;
       width: 100%;
       padding-top: 56.25%;
       background: black;
     }
 
-    iframe{
-      position:absolute;
-      top:0; left:0;
-      width:100%; height:100%;
-      border:none;
+    iframe {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      border: none;
     }
 
-    .hint{
+    .hint {
       padding: 10px 16px;
       font-size: 12px;
       color: rgba(255,255,255,0.65);
@@ -132,10 +119,9 @@
 
     /* ---------- RIGHT COLUMN STACK ---------- */
     .right-col{
-      display:flex;
-      flex-direction:column;
+      display: flex;
+      flex-direction: column;
       gap: 18px;
-      min-height: 0;
     }
 
     /* ---------- PANEL (Instability + Top News) ---------- */
@@ -145,13 +131,9 @@
       overflow: hidden;
       background: #0f141b;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-
-      display:flex;
-      flex-direction:column;
-      min-height: 0; /* critical for inner scrolling */
     }
 
-    /* FIXED HEIGHTS so the list scrolls INSIDE */
+    /* FIXED heights for the panels */
     #instabilityPanel{ height: 540px; }
     #topNewsPanel{ height: 340px; }
 
@@ -163,10 +145,6 @@
       align-items:center;
       justify-content:space-between;
       gap: 10px;
-
-      position: sticky; /* header stays while list scrolls */
-      top: 0;
-      z-index: 5;
     }
 
     .instability-title{
@@ -193,49 +171,47 @@
       white-space: nowrap;
     }
 
-    /* THIS is the scroll container */
+    /* ---------- LIST CONTAINERS ---------- */
     .instability-list{
       padding: 12px;
       display:flex;
       flex-direction:column;
       gap: 10px;
-
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      overflow-x: hidden;
     }
 
-    /* Optional fade like your reference */
-    .instability-list{
-      -webkit-mask-image: linear-gradient(to bottom,
-        transparent 0px,
-        black 18px,
-        black calc(100% - 18px),
-        transparent 100%);
-      mask-image: linear-gradient(to bottom,
-        transparent 0px,
-        black 18px,
-        black calc(100% - 18px),
-        transparent 100%);
+    /* FORCE SCROLL (cannot fail) */
+    #instabilityList{
+      max-height: 460px;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      padding-right: 6px;
+    }
+
+    #topNewsList{
+      max-height: 260px;
+      overflow-y: scroll;
+      overflow-x: hidden;
+      padding-right: 6px;
     }
 
     /* Scrollbar styling */
-    .instability-list::-webkit-scrollbar{ width: 10px; }
-    .instability-list::-webkit-scrollbar-track{
+    #instabilityList::-webkit-scrollbar,
+    #topNewsList::-webkit-scrollbar{
+      width: 10px;
+    }
+    #instabilityList::-webkit-scrollbar-track,
+    #topNewsList::-webkit-scrollbar-track{
       background: rgba(255,255,255,0.04);
       border-radius: 999px;
     }
-    .instability-list::-webkit-scrollbar-thumb{
+    #instabilityList::-webkit-scrollbar-thumb,
+    #topNewsList::-webkit-scrollbar-thumb{
       background: rgba(255,255,255,0.18);
       border-radius: 999px;
     }
-    .instability-list::-webkit-scrollbar-thumb:hover{
+    #instabilityList::-webkit-scrollbar-thumb:hover,
+    #topNewsList::-webkit-scrollbar-thumb:hover{
       background: rgba(255,255,255,0.28);
-    }
-    .instability-list{
-      scrollbar-width: thin;
-      scrollbar-color: rgba(255,255,255,0.18) rgba(255,255,255,0.04);
     }
 
     /* ---------- CARDS ---------- */
@@ -319,7 +295,7 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
-    /* ---------- TOP NEWS LIST ---------- */
+    /* ---------- TOP NEWS CARDS ---------- */
     .news-item{
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 10px;
@@ -331,7 +307,6 @@
       color: rgba(255,255,255,0.95);
       text-decoration: none;
     }
-
     .news-item a:hover{ text-decoration: underline; }
 
     .news-meta{
@@ -466,11 +441,12 @@
       count.textContent = sorted.length;
 
       if (meta?.window_days) windowBadge.textContent = String(meta.window_days) + "D";
+
       if (meta?.generated_at_utc) {
         const dt = new Date(meta.generated_at_utc);
-        updated.textContent = "Updated " + dt.toLocaleString();
+        updated.textContent = (!isNaN(dt)) ? ("Updated " + dt.toLocaleString()) : ("Updated " + meta.generated_at_utc);
       } else {
-        updated.textContent = "Demo data";
+        updated.textContent = "No timestamp";
       }
 
       list.innerHTML = "";
@@ -540,7 +516,7 @@
 
       if (payload?.generated_at_utc) {
         const dt = new Date(payload.generated_at_utc);
-        updated.textContent = "Updated " + dt.toLocaleString();
+        updated.textContent = (!isNaN(dt)) ? ("Updated " + dt.toLocaleString()) : ("Updated " + payload.generated_at_utc);
       } else {
         updated.textContent = "No timestamp";
       }
@@ -549,7 +525,7 @@
       if (!articles.length){
         const empty = document.createElement("div");
         empty.className = "news-item";
-        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">Check your JSON file.</div>`;
+        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">Create <code>data/top_news.json</code>.</div>`;
         list.appendChild(empty);
         return;
       }
