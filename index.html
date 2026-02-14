@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Live News</title>
+  <title>Global Monitor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <style>
@@ -11,22 +11,26 @@
       background: #0b0f14;
       font-family: Arial, Helvetica, sans-serif;
       color: white;
+      padding: 40px;
       display: flex;
       justify-content: center;
-      padding: 40px;
     }
 
-    /* Wrapper so we can stack multiple blocks */
+    /* ---------- DASHBOARD LAYOUT ---------- */
     .dashboard {
-      width: 1000px;
-      display: flex;
-      flex-direction: column;
+      width: 1200px;
+      display: grid;
+      grid-template-columns: 2fr 1fr;
       gap: 18px;
     }
 
-    /* ---------------- LIVE NEWS BLOCK ---------------- */
+    @media (max-width: 1000px){
+      .dashboard { grid-template-columns: 1fr; }
+      body { padding: 18px; }
+    }
+
+    /* ---------- LIVE NEWS ---------- */
     .news-block {
-      width: 100%;
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 12px;
       overflow: hidden;
@@ -100,10 +104,8 @@
 
     iframe {
       position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
       border: none;
     }
 
@@ -115,56 +117,64 @@
       background: rgba(0,0,0,0.2);
     }
 
-    /* ---------------- COUNTRY INSTABILITY BLOCK ---------------- */
-
+    /* ---------- INSTABILITY SIDE PANEL ---------- */
     .instability-block{
-      width: 100%;
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 12px;
       overflow: hidden;
       background: #0f141b;
       box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      min-height: 540px;
     }
 
     .instability-header{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
       padding: 14px 16px;
       border-bottom: 1px solid rgba(255,255,255,0.15);
       background: #0c1118;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 10px;
     }
 
     .instability-title{
       font-weight: bold;
       letter-spacing: 2px;
-      font-size: 18px;
+      font-size: 14px;
       text-transform: uppercase;
+    }
+
+    .meta-right{
       display:flex;
       align-items:center;
-      gap:10px;
+      gap: 8px;
+      flex: 0 0 auto;
     }
 
     .badge{
       border: 1px solid rgba(255,255,255,0.15);
-      padding: 4px 10px;
+      padding: 3px 8px;
       border-radius: 999px;
-      font-size: 12px;
+      font-size: 11px;
       opacity: 0.85;
       background: rgba(255,255,255,0.04);
+      white-space: nowrap;
     }
 
     .instability-list{
-      padding: 14px;
+      padding: 12px;
       display:flex;
       flex-direction:column;
-      gap: 12px;
+      gap: 10px;
+      overflow: auto;
     }
 
     .country-card{
       border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 14px;
-      padding: 12px;
+      border-radius: 10px;
+      padding: 10px;
       background: rgba(0,0,0,0.18);
     }
 
@@ -172,57 +182,56 @@
       display:flex;
       align-items:center;
       justify-content:space-between;
-      gap: 12px;
+      gap: 10px;
     }
 
     .country-left{
       display:flex;
       align-items:center;
-      gap: 10px;
+      gap: 8px;
       min-width: 0;
     }
 
     .country-dot{
-      width: 14px;
-      height: 14px;
+      width: 10px;
+      height: 10px;
       border-radius: 50%;
-      background: #f59e0b; /* orange */
-      box-shadow: 0 0 14px rgba(245,158,11,.35);
       flex: 0 0 auto;
     }
 
     .country-name{
-      font-size: 18px;
+      font-size: 14px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      max-width: 220px;
     }
 
-    .country-right{
+    .score-wrap{
       display:flex;
       align-items:center;
-      gap: 10px;
+      gap: 8px;
       flex: 0 0 auto;
     }
 
-    .score{
-      font-size: 26px;
-      font-weight: 700;
+    .severity{
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.15);
+      background: rgba(255,255,255,0.04);
       opacity: 0.95;
+      white-space: nowrap;
     }
 
-    .share{
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.03);
-      color: rgba(255,255,255,0.85);
-      border-radius: 10px;
-      padding: 6px 10px;
-      cursor:pointer;
+    .score{
+      font-size: 18px;
+      font-weight: 700;
     }
 
     .bar{
-      margin-top: 10px;
-      height: 6px;
+      margin-top: 6px;
+      height: 5px;
       border-radius: 999px;
       background: rgba(255,255,255,.10);
       overflow:hidden;
@@ -231,24 +240,15 @@
     .bar > div{
       height: 100%;
       width: 0%;
-      background: #f59e0b;
       border-radius: 999px;
     }
 
     .breakdown{
-      margin-top: 8px;
+      margin-top: 6px;
       color: rgba(255,255,255,.55);
-      font-size: 12px;
-      letter-spacing: .08em;
+      font-size: 11px;
+      letter-spacing: .06em;
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-    }
-
-    .instability-note{
-      padding: 10px 16px;
-      font-size: 12px;
-      color: rgba(255,255,255,0.65);
-      border-top: 1px solid rgba(255,255,255,0.08);
-      background: rgba(0,0,0,0.2);
     }
   </style>
 </head>
@@ -256,7 +256,7 @@
 <body>
   <div class="dashboard">
 
-    <!-- LIVE NEWS BLOCK -->
+    <!-- LIVE NEWS -->
     <div class="news-block">
       <div class="header">
         <div class="title">LIVE NEWS</div>
@@ -276,34 +276,28 @@
       </div>
 
       <div class="hint">
-        If a channel isn’t live right now, YouTube may show “This video is unavailable”. Switch tabs.
-        Autoplay requires mute; unmute inside the player.
+        If a channel isn’t live right now, YouTube may show “This video is unavailable”.
       </div>
     </div>
 
-
-    <!-- COUNTRY INSTABILITY INDEX BLOCK -->
+    <!-- INSTABILITY SIDE -->
     <div class="instability-block">
       <div class="instability-header">
-        <div class="instability-title">
-          COUNTRY INSTABILITY INDEX
+        <div class="instability-title">INSTABILITY INDEX</div>
+        <div class="meta-right">
+          <span class="badge" id="instabilityWindow">7D</span>
+          <span class="badge" id="instabilityUpdated">Loading…</span>
           <span class="badge" id="instabilityCount">0</span>
         </div>
       </div>
 
       <div class="instability-list" id="instabilityList"></div>
-
-      <div class="instability-note">
-        This is a demo scoring block. Next step: connect it to real signals (GDELT, ACLED, outages, sanctions) and calculate scores automatically.
-      </div>
     </div>
 
   </div>
 
   <script>
-    // ---------------------------
-    // LIVE NEWS TABS
-    // ---------------------------
+    /* ---------- LIVE NEWS ---------- */
     const channels = [
       { name: "SKY NEWS", channelId: "UCoMdktPbSTixAyNGwb-UYkQ" },
       { name: "NBC NEWS", channelId: "UCeY0bbntWzzVIaj2z3QigXg" },
@@ -339,68 +333,103 @@
       tab.innerText = c.name;
       tab.onclick = () => setChannel(c.channelId, tab);
       tabs.appendChild(tab);
-
       if (i === 0) setChannel(c.channelId, tab);
     });
 
+    /* ---------- INSTABILITY INDEX (Severity + live JSON) ---------- */
+    function severityFor(score){
+      if (score >= 80) return { label: "CRITICAL", color: "#ef4444" };
+      if (score >= 65) return { label: "HIGH",     color: "#f59e0b" };
+      if (score >= 50) return { label: "ELEVATED", color: "#eab308" };
+      return              { label: "MODERATE", color: "#22c55e" };
+    }
 
-    // ---------------------------
-    // COUNTRY INSTABILITY INDEX (demo data)
-    // ---------------------------
-    const INSTABILITY_DATA = [
-      { country: "Israel", score: 76, U: 70, C: 0, S: 30, I: 54 },
-      { country: "Ukraine", score: 70, U: 70, C: 0, S: 0, I: 0 },
+    // Fallback demo data (used if data/instability.json isn't available yet)
+    const DEMO_INSTABILITY_DATA = [
+      { country: "Yemen", score: 85, U: 75, C: 15, S: 60, I: 50 },
+      { country: "Sudan", score: 83, U: 70, C: 25, S: 55, I: 45 },
+      { country: "Syria", score: 82, U: 80, C: 20, S: 50, I: 40 },
+      { country: "Afghanistan", score: 78, U: 60, C: 10, S: 40, I: 45 },
+      { country: "Israel", score: 76, U: 70, C: 0,  S: 30, I: 54 },
+      { country: "Ukraine", score: 70, U: 70, C: 0,  S: 0,  I: 0  },
+      { country: "Russia", score: 68, U: 40, C: 60, S: 20, I: 35 },
+      { country: "Iran", score: 66, U: 55, C: 40, S: 30, I: 20 },
+      { country: "Venezuela", score: 64, U: 35, C: 45, S: 30, I: 20 },
       { country: "South Africa", score: 58, U: 40, C: 10, S: 25, I: 18 }
     ];
 
-    function renderInstability() {
+    async function loadInstabilityFromJson(){
+      // cache-bust so GitHub Pages always loads the latest file
+      const res = await fetch("data/instability.json?ts=" + Date.now());
+      if (!res.ok) throw new Error("instability.json not found");
+      return await res.json();
+    }
+
+    function renderInstability(rows, meta){
       const list = document.getElementById("instabilityList");
       const count = document.getElementById("instabilityCount");
-      if (!list || !count) return;
+      const updated = document.getElementById("instabilityUpdated");
+      const windowBadge = document.getElementById("instabilityWindow");
 
-      count.textContent = String(INSTABILITY_DATA.length);
+      const sorted = [...rows].sort((a,b) => (b.score ?? 0) - (a.score ?? 0));
+
+      count.textContent = sorted.length;
+
+      if (meta?.window_days) windowBadge.textContent = String(meta.window_days) + "D";
+      if (meta?.generated_at_utc) {
+        const dt = new Date(meta.generated_at_utc);
+        updated.textContent = "Updated " + dt.toLocaleString();
+      } else {
+        updated.textContent = "Demo data";
+      }
+
       list.innerHTML = "";
 
-      INSTABILITY_DATA.forEach(item => {
+      sorted.forEach(item => {
+        const score = Number(item.score ?? 0);
+        const sev = severityFor(score);
+
         const card = document.createElement("div");
         card.className = "country-card";
-
-        const barPct = Math.max(0, Math.min(100, item.score));
 
         card.innerHTML = `
           <div class="country-top">
             <div class="country-left">
-              <div class="country-dot"></div>
+              <div class="country-dot" style="background:${sev.color}; box-shadow: 0 0 10px ${sev.color}55;"></div>
               <div class="country-name">${item.country}</div>
             </div>
-            <div class="country-right">
-              <div class="score">${item.score}</div>
-              <button class="share" title="Copy summary">↗</button>
+
+            <div class="score-wrap">
+              <span class="severity" style="border-color:${sev.color}55; background:${sev.color}22; color:${sev.color};">
+                ${sev.label}
+              </span>
+              <div class="score">${score}</div>
             </div>
           </div>
 
-          <div class="bar"><div style="width:${barPct}%"></div></div>
+          <div class="bar">
+            <div style="width:${Math.max(0, Math.min(100, score))}%; background:${sev.color};"></div>
+          </div>
 
           <div class="breakdown">
-            U:${item.U} &nbsp; C:${item.C} &nbsp; S:${item.S} &nbsp; I:${item.I}
+            U:${item.U ?? 0} C:${item.C ?? 0} S:${item.S ?? 0} I:${item.I ?? 0}
           </div>
         `;
-
-        card.querySelector(".share").onclick = async () => {
-          const text = `${item.country} Instability Score: ${item.score} (U:${item.U} C:${item.C} S:${item.S} I:${item.I})`;
-          try {
-            await navigator.clipboard.writeText(text);
-            alert("Copied ✅");
-          } catch {
-            alert(text);
-          }
-        };
 
         list.appendChild(card);
       });
     }
 
-    renderInstability();
+    // Try real data first. If not available yet, show demo.
+    (async () => {
+      try {
+        const payload = await loadInstabilityFromJson();
+        renderInstability(payload.countries || [], payload);
+      } catch (e) {
+        console.warn("Using demo instability data:", e.message);
+        renderInstability(DEMO_INSTABILITY_DATA, null);
+      }
+    })();
   </script>
 </body>
 </html>
