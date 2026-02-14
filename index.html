@@ -16,8 +16,17 @@
       padding: 40px;
     }
 
-    .news-block {
+    /* Wrapper so we can stack multiple blocks */
+    .dashboard {
       width: 1000px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* ---------------- LIVE NEWS BLOCK ---------------- */
+    .news-block {
+      width: 100%;
       border: 1px solid rgba(255,255,255,0.15);
       border-radius: 12px;
       overflow: hidden;
@@ -105,38 +114,196 @@
       border-top: 1px solid rgba(255,255,255,0.08);
       background: rgba(0,0,0,0.2);
     }
+
+    /* ---------------- COUNTRY INSTABILITY BLOCK ---------------- */
+
+    .instability-block{
+      width: 100%;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 12px;
+      overflow: hidden;
+      background: #0f141b;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .instability-header{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,0.15);
+      background: #0c1118;
+    }
+
+    .instability-title{
+      font-weight: bold;
+      letter-spacing: 2px;
+      font-size: 18px;
+      text-transform: uppercase;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+
+    .badge{
+      border: 1px solid rgba(255,255,255,0.15);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      opacity: 0.85;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .instability-list{
+      padding: 14px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+
+    .country-card{
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 14px;
+      padding: 12px;
+      background: rgba(0,0,0,0.18);
+    }
+
+    .country-top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+    }
+
+    .country-left{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      min-width: 0;
+    }
+
+    .country-dot{
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      background: #f59e0b; /* orange */
+      box-shadow: 0 0 14px rgba(245,158,11,.35);
+      flex: 0 0 auto;
+    }
+
+    .country-name{
+      font-size: 18px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .country-right{
+      display:flex;
+      align-items:center;
+      gap: 10px;
+      flex: 0 0 auto;
+    }
+
+    .score{
+      font-size: 26px;
+      font-weight: 700;
+      opacity: 0.95;
+    }
+
+    .share{
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.03);
+      color: rgba(255,255,255,0.85);
+      border-radius: 10px;
+      padding: 6px 10px;
+      cursor:pointer;
+    }
+
+    .bar{
+      margin-top: 10px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.10);
+      overflow:hidden;
+    }
+
+    .bar > div{
+      height: 100%;
+      width: 0%;
+      background: #f59e0b;
+      border-radius: 999px;
+    }
+
+    .breakdown{
+      margin-top: 8px;
+      color: rgba(255,255,255,.55);
+      font-size: 12px;
+      letter-spacing: .08em;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+    }
+
+    .instability-note{
+      padding: 10px 16px;
+      font-size: 12px;
+      color: rgba(255,255,255,0.65);
+      border-top: 1px solid rgba(255,255,255,0.08);
+      background: rgba(0,0,0,0.2);
+    }
   </style>
 </head>
 
 <body>
-  <div class="news-block">
-    <div class="header">
-      <div class="title">LIVE NEWS</div>
-      <div class="live">
-        <div class="dot"></div>
-        LIVE
+  <div class="dashboard">
+
+    <!-- LIVE NEWS BLOCK -->
+    <div class="news-block">
+      <div class="header">
+        <div class="title">LIVE NEWS</div>
+        <div class="live">
+          <div class="dot"></div>
+          LIVE
+        </div>
+      </div>
+
+      <div class="tabs" id="tabs"></div>
+
+      <div class="player">
+        <iframe id="player"
+          allow="autoplay; encrypted-media; picture-in-picture"
+          allowfullscreen>
+        </iframe>
+      </div>
+
+      <div class="hint">
+        If a channel isn’t live right now, YouTube may show “This video is unavailable”. Switch tabs.
+        Autoplay requires mute; unmute inside the player.
       </div>
     </div>
 
-    <div class="tabs" id="tabs"></div>
 
-    <div class="player">
-      <iframe id="player"
-        allow="autoplay; encrypted-media; picture-in-picture"
-        allowfullscreen>
-      </iframe>
+    <!-- COUNTRY INSTABILITY INDEX BLOCK -->
+    <div class="instability-block">
+      <div class="instability-header">
+        <div class="instability-title">
+          COUNTRY INSTABILITY INDEX
+          <span class="badge" id="instabilityCount">0</span>
+        </div>
+      </div>
+
+      <div class="instability-list" id="instabilityList"></div>
+
+      <div class="instability-note">
+        This is a demo scoring block. Next step: connect it to real signals (GDELT, ACLED, outages, sanctions) and calculate scores automatically.
+      </div>
     </div>
 
-    <div class="hint">
-      If a channel isn’t live right now, YouTube may show “This video is unavailable”. Switch tabs.
-      Autoplay requires mute; unmute inside the player.
-    </div>
   </div>
 
   <script>
-    // Stable approach: embed the channel's current live stream (no video IDs).
-    // Format: https://www.youtube.com/embed/live_stream?channel=CHANNEL_ID
-
+    // ---------------------------
+    // LIVE NEWS TABS
+    // ---------------------------
     const channels = [
       { name: "SKY NEWS", channelId: "UCoMdktPbSTixAyNGwb-UYkQ" },
       { name: "NBC NEWS", channelId: "UCeY0bbntWzzVIaj2z3QigXg" },
@@ -155,8 +322,8 @@
       const url = new URL("https://www.youtube.com/embed/live_stream");
       url.searchParams.set("channel", channelId);
       url.searchParams.set("autoplay", "1");
-      url.searchParams.set("mute", "1");        // needed for autoplay
-      url.searchParams.set("playsinline", "1"); // nicer on mobile
+      url.searchParams.set("mute", "1");
+      url.searchParams.set("playsinline", "1");
       return url.toString();
     }
 
@@ -175,6 +342,65 @@
 
       if (i === 0) setChannel(c.channelId, tab);
     });
+
+
+    // ---------------------------
+    // COUNTRY INSTABILITY INDEX (demo data)
+    // ---------------------------
+    const INSTABILITY_DATA = [
+      { country: "Israel", score: 76, U: 70, C: 0, S: 30, I: 54 },
+      { country: "Ukraine", score: 70, U: 70, C: 0, S: 0, I: 0 },
+      { country: "South Africa", score: 58, U: 40, C: 10, S: 25, I: 18 }
+    ];
+
+    function renderInstability() {
+      const list = document.getElementById("instabilityList");
+      const count = document.getElementById("instabilityCount");
+      if (!list || !count) return;
+
+      count.textContent = String(INSTABILITY_DATA.length);
+      list.innerHTML = "";
+
+      INSTABILITY_DATA.forEach(item => {
+        const card = document.createElement("div");
+        card.className = "country-card";
+
+        const barPct = Math.max(0, Math.min(100, item.score));
+
+        card.innerHTML = `
+          <div class="country-top">
+            <div class="country-left">
+              <div class="country-dot"></div>
+              <div class="country-name">${item.country}</div>
+            </div>
+            <div class="country-right">
+              <div class="score">${item.score}</div>
+              <button class="share" title="Copy summary">↗</button>
+            </div>
+          </div>
+
+          <div class="bar"><div style="width:${barPct}%"></div></div>
+
+          <div class="breakdown">
+            U:${item.U} &nbsp; C:${item.C} &nbsp; S:${item.S} &nbsp; I:${item.I}
+          </div>
+        `;
+
+        card.querySelector(".share").onclick = async () => {
+          const text = `${item.country} Instability Score: ${item.score} (U:${item.U} C:${item.C} S:${item.S} I:${item.I})`;
+          try {
+            await navigator.clipboard.writeText(text);
+            alert("Copied ✅");
+          } catch {
+            alert(text);
+          }
+        };
+
+        list.appendChild(card);
+      });
+    }
+
+    renderInstability();
   </script>
 </body>
 </html>
