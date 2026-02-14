@@ -1,0 +1,8 @@
+{
+  "generated_at_utc": "placeholder",
+  "window_days": 7,
+  "countries": [
+    { "country": "Yemen", "score": 85, "U": 75, "C": 15, "S": 60, "I": 50 },
+    { "country": "Sudan", "score": 83, "U": 70, "C": 25, "S": 55, "I": 45 }
+  ]
+}
