@@ -1,8 +1,16 @@
 {
-  "generated_at_utc": "placeholder",
+  "generated_at_utc": "2026-02-14T19:30:00Z",
   "window_days": 7,
   "countries": [
     { "country": "Yemen", "score": 85, "U": 75, "C": 15, "S": 60, "I": 50 },
-    { "country": "Sudan", "score": 83, "U": 70, "C": 25, "S": 55, "I": 45 }
+    { "country": "Sudan", "score": 83, "U": 70, "C": 25, "S": 55, "I": 45 },
+    { "country": "Syria", "score": 82, "U": 80, "C": 20, "S": 50, "I": 40 },
+    { "country": "Afghanistan", "score": 78, "U": 60, "C": 10, "S": 40, "I": 45 },
+    { "country": "Israel", "score": 76, "U": 70, "C": 0, "S": 30, "I": 54 },
+    { "country": "Ukraine", "score": 70, "U": 70, "C": 0, "S": 0, "I": 0 },
+    { "country": "Russia", "score": 68, "U": 40, "C": 60, "S": 20, "I": 35 },
+    { "country": "Iran", "score": 66, "U": 55, "C": 40, "S": 30, "I": 20 },
+    { "country": "Venezuela", "score": 64, "U": 35, "C": 45, "S": 30, "I": 20 },
+    { "country": "South Africa", "score": 58, "U": 40, "C": 10, "S": 25, "I": 18 }
   ]
 }
