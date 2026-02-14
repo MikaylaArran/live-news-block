@@ -2,7 +2,7 @@ import os, json
 import requests
 from datetime import datetime, timezone
 
-API_KEY = os.environ["NEWSDATA_API_KEY"]
+API_KEY = os.environ["pub_01fca8530e7644058c7b3cc72d9b6d75"]
 URL = f"https://newsdata.io/api/1/latest?apikey={API_KEY}&language=en"
 
 def main():
