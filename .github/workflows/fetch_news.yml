@@ -19,7 +19,7 @@ jobs:
           import requests, json
           from datetime import datetime, timezone
 
-          API_KEY = "YOUR_NEWSDATA_KEY"
+          API_KEY = "pub_01fca8530e7644058c7b3cc72d9b6d75"
           url = f"https://newsdata.io/api/1/latest?apikey={API_KEY}&language=en"
 
           r = requests.get(url, timeout=30)
