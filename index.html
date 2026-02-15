@@ -10,56 +10,49 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
   <style>
-    body {
+    :root{
+      --bg: #0b0f14;
+      --card: #0f141b;
+      --cardTop: #0c1118;
+      --border: rgba(255,255,255,0.15);
+      --shadow: 0 20px 60px rgba(0,0,0,0.5);
+      --gap: 18px;
+      --container: 1180px;
+      --radius: 14px;
+    }
+
+    *{ box-sizing: border-box; }
+
+    body{
       margin: 0;
-      background: #0b0f14;
+      background: var(--bg);
       font-family: Arial, Helvetica, sans-serif;
       color: white;
-
-      /* Full-width page, but content centered */
-      padding: 0;
     }
 
-    /* ✅ Page wrapper to center the dashboard only */
+    /* ✅ ONE centered container for EVERYTHING */
     .page{
-      width: 100%;
+      width: min(var(--container), 100%);
+      margin: 0 auto;
+      padding: 28px 18px 40px;
       display: flex;
       flex-direction: column;
-      align-items: center;
-      gap: 18px;
-      padding: 40px;
-      box-sizing: border-box;
+      gap: var(--gap);
     }
 
-    @media (max-width: 1000px){
-      .page { padding: 18px; }
-    }
-
-    /* ✅ FULL WIDTH MAP STRIP */
-    .map-strip{
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      padding: 18px 0 0;
-      box-sizing: border-box;
-    }
-
+    /* ---------- MAP (aligned with dashboard width) ---------- */
     .map-banner{
-      width: 100vw;                       /* ✅ full viewport width */
-      height: 240px;
-      border-radius: 0;                   /* full-width looks better without rounded edges */
+      width: 100%;
+      height: 250px;
+      border-radius: var(--radius);
       overflow: hidden;
-      border-top: 1px solid rgba(255,255,255,0.12);
-      border-bottom: 1px solid rgba(255,255,255,0.12);
-      background: #0f141b;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      border: 1px solid var(--border);
+      background: var(--card);
+      box-shadow: var(--shadow);
       position: relative;
     }
 
-    #worldMap{
-      width: 100%;
-      height: 100%;
-    }
+    #worldMap{ width: 100%; height: 100%; }
 
     .map-time{
       position: absolute;
@@ -87,46 +80,48 @@
       background: rgba(0,0,0,0.75) !important;
     }
 
-    /* ---------- DASHBOARD LAYOUT ---------- */
-    .dashboard {
-      width: 1100px;
+    /* ---------- DASHBOARD GRID ---------- */
+    .dashboard{
+      width: 100%;
       display: grid;
-      grid-template-columns: 1.5fr 1fr;
-      gap: 18px;
-      align-items: start;
+      grid-template-columns: 1.55fr 1fr;
+      gap: var(--gap);
+      align-items: stretch; /* ✅ make columns same top alignment */
     }
 
     @media (max-width: 1000px){
-      .dashboard { grid-template-columns: 1fr; width: 100%; }
-      .map-banner { height: 200px; }
+      .dashboard{ grid-template-columns: 1fr; }
+      .map-banner{ height: 210px; }
     }
 
-    /* ---------- LIVE NEWS (PLAYER) ---------- */
-    .news-block {
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 12px;
+    /* ---------- LIVE NEWS (left) ---------- */
+    .news-block{
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       overflow: hidden;
-      background: #0f141b;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-      align-self: start;
-      height: fit-content;
+      background: var(--card);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      min-height: 520px; /* keeps it visually stable */
     }
 
-    .header {
+    .header{
       display: flex;
       align-items: center;
       padding: 14px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
-      background: #0c1118;
+      border-bottom: 1px solid var(--border);
+      background: var(--cardTop);
+      flex: 0 0 auto;
     }
 
-    .title {
+    .title{
       font-weight: bold;
       letter-spacing: 2px;
       font-size: 18px;
     }
 
-    .live {
+    .live{
       margin-left: 12px;
       display: flex;
       align-items: center;
@@ -135,7 +130,7 @@
       opacity: 0.8;
     }
 
-    .dot {
+    .dot{
       width: 10px;
       height: 10px;
       background: red;
@@ -143,16 +138,17 @@
       box-shadow: 0 0 10px red;
     }
 
-    .tabs {
+    .tabs{
       display: flex;
       gap: 10px;
       padding: 10px;
       border-bottom: 1px solid rgba(255,255,255,0.1);
       overflow-x: auto;
-      background: #0c1118;
+      background: var(--cardTop);
+      flex: 0 0 auto;
     }
 
-    .tab {
+    .tab{
       border: 1px solid rgba(255,255,255,0.15);
       padding: 8px 14px;
       border-radius: 8px;
@@ -162,62 +158,71 @@
       opacity: 0.7;
       user-select: none;
     }
-
-    .tab.active {
+    .tab.active{
       background: red;
       border-color: red;
       opacity: 1;
     }
 
-    .player {
-      position: relative;
+    /* ✅ Modern sizing: no padding-top hacks */
+    .player{
       width: 100%;
-      padding-top: 42%;
+      aspect-ratio: 16 / 9;
       background: black;
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 260px;
     }
 
-    iframe {
+    iframe{
       position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
+      inset: 0;
+      width: 100%;
+      height: 100%;
       border: none;
     }
 
-    .hint {
+    .hint{
       padding: 10px 16px;
       font-size: 12px;
       color: rgba(255,255,255,0.65);
       border-top: 1px solid rgba(255,255,255,0.08);
       background: rgba(0,0,0,0.2);
+      flex: 0 0 auto;
     }
 
-    /* ---------- RIGHT COLUMN STACK ---------- */
+    /* ---------- RIGHT COLUMN (stacked panels that share height nicely) ---------- */
     .right-col{
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-      align-self: start;
+      display: grid;
+      grid-template-rows: 1.6fr 1fr; /* ✅ instability bigger than top news */
+      gap: var(--gap);
+      min-height: 520px; /* match left stability */
+    }
+
+    @media (max-width: 1000px){
+      .right-col{ grid-template-rows: auto auto; min-height: auto; }
     }
 
     .instability-block{
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
       overflow: hidden;
-      background: #0f141b;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      background: var(--card);
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      min-height: 0; /* ✅ allows inner scroll */
     }
-
-    #instabilityPanel{ height: 540px; }
-    #topNewsPanel{ height: 340px; }
 
     .instability-header{
       padding: 14px 16px;
-      border-bottom: 1px solid rgba(255,255,255,0.15);
-      background: #0c1118;
+      border-bottom: 1px solid var(--border);
+      background: var(--cardTop);
       display:flex;
       align-items:center;
       justify-content:space-between;
       gap: 10px;
+      flex: 0 0 auto;
     }
 
     .instability-title{
@@ -244,47 +249,33 @@
       white-space: nowrap;
     }
 
+    /* ✅ The scroll now belongs to the list area, not fixed heights */
     .instability-list{
       padding: 12px;
       display:flex;
       flex-direction:column;
       gap: 10px;
-    }
-
-    #instabilityList{
-      max-height: 460px;
-      overflow-y: scroll;
+      overflow-y: auto;
       overflow-x: hidden;
-      padding-right: 6px;
+      flex: 1 1 auto;
+      min-height: 0;
+      padding-right: 8px;
     }
 
-    #topNewsList{
-      max-height: 260px;
-      overflow-y: scroll;
-      overflow-x: hidden;
-      padding-right: 6px;
-    }
-
-    #instabilityList::-webkit-scrollbar,
-    #topNewsList::-webkit-scrollbar{
-      width: 10px;
-    }
-    #instabilityList::-webkit-scrollbar-track,
-    #topNewsList::-webkit-scrollbar-track{
+    .instability-list::-webkit-scrollbar{ width: 10px; }
+    .instability-list::-webkit-scrollbar-track{
       background: rgba(255,255,255,0.04);
       border-radius: 999px;
     }
-    #instabilityList::-webkit-scrollbar-thumb,
-    #topNewsList::-webkit-scrollbar-thumb{
+    .instability-list::-webkit-scrollbar-thumb{
       background: rgba(255,255,255,0.18);
       border-radius: 999px;
     }
-    #instabilityList::-webkit-scrollbar-thumb:hover,
-    #topNewsList::-webkit-scrollbar-thumb:hover{
+    .instability-list::-webkit-scrollbar-thumb:hover{
       background: rgba(255,255,255,0.28);
     }
 
-    .country-card{
+    .country-card, .news-item{
       border: 1px solid rgba(255,255,255,0.10);
       border-radius: 10px;
       padding: 10px;
@@ -317,7 +308,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      max-width: 220px;
+      max-width: 240px;
     }
 
     .score-wrap{
@@ -364,13 +355,6 @@
       font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     }
 
-    .news-item{
-      border: 1px solid rgba(255,255,255,0.10);
-      border-radius: 10px;
-      padding: 10px;
-      background: rgba(0,0,0,0.18);
-    }
-
     .news-item a{
       color: rgba(255,255,255,0.95);
       text-decoration: none;
@@ -386,26 +370,19 @@
 </head>
 
 <body>
-  <!-- ✅ FULL WIDTH MAP -->
-  <div class="map-strip">
+  <div class="page">
+    <!-- ✅ MAP aligned with the dashboard -->
     <div class="map-banner">
       <div id="worldMap"></div>
       <div class="map-time" id="mapTime">Loading time…</div>
     </div>
-  </div>
 
-  <!-- ✅ CENTERED CONTENT -->
-  <div class="page">
     <div class="dashboard">
-
       <!-- LIVE NEWS -->
       <div class="news-block">
         <div class="header">
           <div class="title">LIVE NEWS</div>
-          <div class="live">
-            <div class="dot"></div>
-            LIVE
-          </div>
+          <div class="live"><div class="dot"></div>LIVE</div>
         </div>
 
         <div class="tabs" id="tabs"></div>
@@ -422,10 +399,8 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: INSTABILITY + TOP NEWS -->
+      <!-- RIGHT COLUMN -->
       <div class="right-col">
-
-        <!-- INSTABILITY SIDE -->
         <div class="instability-block" id="instabilityPanel">
           <div class="instability-header">
             <div class="instability-title">INSTABILITY INDEX</div>
@@ -435,11 +410,9 @@
               <span class="badge" id="instabilityCount">0</span>
             </div>
           </div>
-
           <div class="instability-list" id="instabilityList"></div>
         </div>
 
-        <!-- TOP 10 NEWS -->
         <div class="instability-block" id="topNewsPanel">
           <div class="instability-header">
             <div class="instability-title">TOP 10 NEWS</div>
@@ -447,12 +420,9 @@
               <span class="badge" id="topNewsUpdated">Loading…</span>
             </div>
           </div>
-
           <div class="instability-list" id="topNewsList"></div>
         </div>
-
       </div>
-
     </div>
   </div>
 
@@ -536,7 +506,6 @@
 
         const card = document.createElement("div");
         card.className = "country-card";
-
         card.innerHTML = `
           <div class="country-top">
             <div class="country-left">
@@ -560,7 +529,6 @@
             U:${item.U ?? 0} C:${item.C ?? 0} S:${item.S ?? 0} I:${item.I ?? 0}
           </div>
         `;
-
         list.appendChild(card);
       });
     }
@@ -685,6 +653,13 @@
     }
     updateMapTime();
     setInterval(updateMapTime, 1000);
+
+    /* ✅ Important: Leaflet needs this after layout settles / on resize */
+    function fixMapSize(){
+      setTimeout(() => map.invalidateSize(), 150);
+    }
+    window.addEventListener("load", fixMapSize);
+    window.addEventListener("resize", fixMapSize);
   </script>
 </body>
 </html>
