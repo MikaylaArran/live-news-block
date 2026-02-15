@@ -1,4 +1,4 @@
-<!-- index.html (FULL FILE) -->
+<!-- index.html (FULL FILE - UPDATED) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -237,7 +237,7 @@
       align-items:center;
       gap:8px;
       flex:0 0 auto;
-      flex-wrap:wrap; /* helps on narrow widths */
+      flex-wrap:wrap;
       justify-content:flex-end;
     }
 
@@ -274,6 +274,7 @@
     }
     .panel-body::-webkit-scrollbar-thumb:hover{
       background:rgba(255,255,255,0.28);
+      border-radius:999px;
     }
 
     .country-card, .news-item{
@@ -367,7 +368,7 @@
       color:rgba(255,255,255,0.6);
     }
 
-    /* NEW: summary card styling */
+    /* Summary card styling */
     .summary-title{
       letter-spacing: .12em;
       font-size: 12px;
@@ -381,7 +382,7 @@
       color: rgba(255,255,255,0.86);
     }
 
-    /* NEW: Top News controls */
+    /* Top News controls */
     .news-select{
       background: rgba(0,0,0,0.35);
       color: rgba(255,255,255,0.92);
@@ -467,7 +468,7 @@
             <div class="panel-title">TOP NEWS</div>
             <div class="meta-right">
               <select class="news-select" id="newsCategory">
-                <option value="all">All</option>
+                <option value="all" selected>All</option>
                 <option value="world">World</option>
                 <option value="politics">Politics</option>
                 <option value="business">Business</option>
@@ -558,7 +559,7 @@
     }
 
     async function loadInstabilityFromJson(){
-      const res = await fetch("data/instability.json?ts=" + Date.now());
+      const res = await fetch("data/instability.json?ts=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("instability.json not found");
       return await res.json();
     }
@@ -627,7 +628,7 @@
       }
     })();
 
-    /* ---------- TOP NEWS (Category + N + Refresh) ---------- */
+    /* ---------- TOP NEWS (FIXED: loads data/top_news.json) ---------- */
     const newsCategoryEl = document.getElementById("newsCategory");
     const newsNEl = document.getElementById("newsN");
     const newsRefreshBtn = document.getElementById("newsRefresh");
@@ -639,16 +640,35 @@
     }
 
     function buildNewsPath(){
-      const cat = newsCategoryEl.value; // all/world/...
-      const n = newsNEl.value;          // 20/40/60/100
-      return `data/top_news_${cat}_${n}.json`;
+      // ✅ always use the file you actually have in your repo
+      return `data/top_news.json`;
     }
 
     async function loadTopNewsSelected(){
       const path = buildNewsPath();
-      const res = await fetch(path + "?ts=" + Date.now());
+      const res = await fetch(path + "?ts=" + Date.now(), { cache: "no-store" });
       if (!res.ok) throw new Error("Missing " + path);
       return await res.json();
+    }
+
+    function normalizeArticles(payload){
+      if (Array.isArray(payload)) return payload;
+      return payload?.articles || payload?.results || payload?.items || [];
+    }
+
+    function matchesCategory(article, selectedCat){
+      if (selectedCat === "all") return true;
+
+      // category can be string or array depending on source
+      if (Array.isArray(article.category)) {
+        return article.category.map(x => String(x).toLowerCase()).includes(selectedCat);
+      }
+
+      const cat = String(
+        article.category ?? article.categories ?? article.topic ?? article.section ?? ""
+      ).toLowerCase();
+
+      return cat.includes(selectedCat);
     }
 
     function renderTopNews(payload){
@@ -660,38 +680,38 @@
         const dt = new Date(payload.generated_at_utc);
         updated.textContent = (!isNaN(dt)) ? ("Updated " + dt.toLocaleString()) : ("Updated " + payload.generated_at_utc);
       } else {
-        updated.textContent = "No timestamp";
+        updated.textContent = "Updated (no timestamp)";
       }
 
-      // Summary card
-      if (payload?.summary) {
-        const summary = document.createElement("div");
-        summary.className = "news-item";
-        summary.innerHTML = `
-          <div class="summary-title">Summary</div>
-          <div class="summary-text">${safeText(payload.summary)}</div>
-          <div class="news-meta">${payload?.category ? safeText(payload.category) : ""}${payload?.language ? ` | ${safeText(payload.language)}` : ""}${payload?.n ? ` | N=${safeText(payload.n)}` : ""}</div>
-        `;
-        list.appendChild(summary);
-      }
+      const selectedCat = newsCategoryEl.value;
+      const n = parseInt(newsNEl.value, 10) || 60;
 
-      const articles = payload?.articles || payload?.results || payload?.items || [];
+      let articles = normalizeArticles(payload);
+      articles = articles.filter(a => matchesCategory(a, selectedCat));
+
       if (!articles.length){
-        const empty = document.createElement("div");
-        empty.className = "news-item";
-        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">The JSON exists but has no articles.</div>`;
-        list.appendChild(empty);
+        list.innerHTML = `
+          <div class="news-item">
+            <strong>No news found.</strong>
+            <div class="news-meta">
+              Either the JSON has no articles, or your articles don’t include category fields that match “${safeText(selectedCat)}”.
+            </div>
+          </div>
+        `;
         return;
       }
 
-      articles.slice(0, 10).forEach(a => {
+      // show first N available, but render top 10 on screen (change if you want)
+      const display = articles.slice(0, Math.min(n, 10));
+
+      display.forEach(a => {
         const item = document.createElement("div");
         item.className = "news-item";
 
         const title = a.title || "Untitled";
         const link = a.url || a.link || "";
-        const source = a.source || a.source_id || a.sourceId || "";
-        const pubDate = a.published_at || a.pubDate || a.publishedAt || "";
+        const source = a.source || a.source_id || a.sourceId || a.source_name || "";
+        const pubDate = a.published_at || a.pubDate || a.publishedAt || a.date || "";
 
         item.innerHTML = `
           <div>
@@ -717,7 +737,7 @@
           <div class="news-item">
             <strong>Top news data not found.</strong>
             <div class="news-meta">${safeText(e.message)}</div>
-            <div class="news-meta">Your GitHub Action must generate files like <code>data/top_news_world_60.json</code>.</div>
+            <div class="news-meta">Expected <code>data/top_news.json</code> to exist on GitHub Pages.</div>
           </div>
         `;
       }
@@ -726,7 +746,7 @@
     newsCategoryEl.addEventListener("change", refreshTopNews);
     newsNEl.addEventListener("change", refreshTopNews);
     newsRefreshBtn.addEventListener("click", refreshTopNews);
-    refreshTopNews(); // initial
+    refreshTopNews();
 
     /* ---------- WORLD MAP ---------- */
     const map = L.map("worldMap", {
