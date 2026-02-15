@@ -9,46 +9,57 @@ from datetime import datetime, timezone
 
 BASE_URL = "https://newsdata.io/api/1/latest"
 
-# Dropdown options from your index.html
+# Dropdown options used by index.html
 CATEGORIES = ["all", "world", "politics", "business", "technology", "environment"]
 N_VALUES = [20, 40, 60, 100]
 
 # -----------------------------
-# Fetch headlines (with gentle backoff)
+# Safe request with backoff
 # -----------------------------
 def _request_with_backoff(params: dict, max_retries: int = 3):
     delay = 1.0
     last_exc = None
+
     for _ in range(max_retries + 1):
         try:
             r = requests.get(BASE_URL, params=params, timeout=30)
+
             if r.status_code == 429:
                 time.sleep(delay)
                 delay *= 2
                 continue
+
             r.raise_for_status()
             return r.json()
+
         except Exception as e:
             last_exc = e
             time.sleep(delay)
             delay *= 2
-    raise last_exc
 
-def fetch_top_n(api_key: str, n: int = 100, language: str = "en", max_calls: int = 4, category: str | None = None):
+    if last_exc:
+        raise last_exc
+    raise RuntimeError("NewsData request failed without exception")
+
+# -----------------------------
+# Fetch headlines
+# -----------------------------
+def fetch_top_n(api_key: str, n: int, language: str, category: str | None):
     items = []
     page_token = None
+    max_calls = 4
 
     for _ in range(max_calls):
         params = {"apikey": api_key, "language": language}
 
-        # NewsData expects category only when not "all"
         if category:
             params["category"] = category
 
         if page_token:
             params["page"] = page_token
 
-        data = _request_with_backoff(params, max_retries=2)
+        data = _request_with_backoff(params)
+
         if data.get("status") != "success":
             raise RuntimeError(str(data))
 
@@ -64,7 +75,7 @@ def fetch_top_n(api_key: str, n: int = 100, language: str = "en", max_calls: int
     return items[:n]
 
 # -----------------------------
-# Text utilities (clustering)
+# Text clustering utilities
 # -----------------------------
 STOP = set("""
 a an the and or but if then than so to of in on for with from by at as is are was were be been being
@@ -122,12 +133,14 @@ def cluster_titles(rows, sim_threshold=0.33):
         title = (r.get("title") or "").strip()
         if not title:
             continue
+
         tks = tokenize(title)
         if not tks:
             continue
 
         best_i = None
         best_sim = 0.0
+
         for i, c in enumerate(clusters):
             centroid = [w for w, _ in c["tok_counts"].most_common(25)]
             sim = jaccard(tks, centroid)
@@ -165,20 +178,30 @@ def label_cluster(cluster):
 
 def representative_title(cluster):
     counts = cluster["tok_counts"]
+
     def score(t):
         return sum(counts.get(w, 0) for w in tokenize(t))
+
     rows = cluster["rows"]
-    rows_sorted = sorted(rows, key=lambda r: (-score(r.get("title","")), len(r.get("title","") or "")))
+    rows_sorted = sorted(
+        rows,
+        key=lambda r: (-score(r.get("title","")), len(r.get("title","") or ""))
+    )
+
     return (rows_sorted[0].get("title","") or "").strip()
 
 def build_clean_paragraph(rows):
     if not rows:
         return "No headlines were available to summarize."
 
-    filtered = [r for r in rows if not is_low_signal(r.get("title",""), r.get("description",""))]
-    corpus = filtered if len(filtered) >= 40 else rows
+    filtered = [
+        r for r in rows
+        if not is_low_signal(r.get("title",""), r.get("description",""))
+    ]
 
+    corpus = filtered if len(filtered) >= 40 else rows
     clusters = cluster_titles(corpus)
+
     if not clusters:
         return "Insufficient signal to produce a coherent summary."
 
@@ -187,12 +210,14 @@ def build_clean_paragraph(rows):
 
     chosen = []
     seen = set()
+
     for c in clusters:
         if c["topic"] not in seen:
             chosen.append(c)
             seen.add(c["topic"])
         if len(chosen) == 3:
             break
+
     if len(chosen) < 3:
         chosen = clusters[:3]
 
@@ -203,18 +228,18 @@ def build_clean_paragraph(rows):
             lines.append(f"{c['topic']}: {rep}")
 
     while len(lines) < 3:
-        lines.append("Other: Additional headlines are mixed and do not cluster cleanly.")
+        lines.append("Other: Additional headlines are mixed.")
 
     return (
         "The current headlines point to several parallel developments. "
         f"{lines[0]}. {lines[1]}. {lines[2]}. "
-        "Taken together, the feed reflects a dispersed news cycle rather than a single dominant global event."
+        "Taken together, the feed reflects a dispersed news cycle."
     )
 
 # -----------------------------
-# Write JSON (for index.html)
+# JSON writer
 # -----------------------------
-def write_payload(path: str, language: str, category_label: str, n: int, results: list):
+def write_payload(path, language, category, n, results):
     articles = []
     for a in results[:10]:
         articles.append({
@@ -227,7 +252,7 @@ def write_payload(path: str, language: str, category_label: str, n: int, results
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "language": language,
-        "category": category_label,
+        "category": category,
         "n": n,
         "summary": build_clean_paragraph(results),
         "articles": articles
@@ -236,6 +261,9 @@ def write_payload(path: str, language: str, category_label: str, n: int, results
     with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
+# -----------------------------
+# MAIN
+# -----------------------------
 def main():
     api_key = os.getenv("NEWSDATA_API_KEY", "").strip()
     if not api_key:
@@ -245,26 +273,30 @@ def main():
 
     os.makedirs("data", exist_ok=True)
 
-    # Generate all category + N combos for your dropdown
     written = 0
+
     for cat in CATEGORIES:
         cat_param = None if cat == "all" else cat
 
         for n in N_VALUES:
-            results = fetch_top_n(api_key, n=n, language=language, category=cat_param)
+            results = fetch_top_n(api_key, n, language, cat_param)
+
             out_path = f"data/top_news_{cat}_{n}.json"
             write_payload(out_path, language, cat, n, results)
-            written += 1
-            print(f"✅ Wrote {out_path}")
 
-    # Also write a fallback file (optional) so older code still works
-    # Default: all_60
-    default_path = "data/top_news.json"
-    with open(f"data/top_news_all_60.json", "r", encoding="utf-8") as src:
-        default_payload = json.load(src)
-    with open(default_path, "w", encoding="utf-8") as dst:
-        json.dump(default_payload, dst, ensure_ascii=False, indent=2)
-    print("✅ Wrote data/top_news.json (alias of top_news_all_60.json)")
+            print(f"✅ Wrote {out_path}")
+            written += 1
+
+    # default alias
+    default_src = "data/top_news_all_60.json"
+    default_dst = "data/top_news.json"
+
+    if os.path.exists(default_src):
+        with open(default_src, "r", encoding="utf-8") as src:
+            payload = json.load(src)
+        with open(default_dst, "w", encoding="utf-8") as dst:
+            json.dump(payload, dst, ensure_ascii=False, indent=2)
+        print("✅ Wrote data/top_news.json alias")
 
     print(f"✅ Done. Generated {written} files.")
 
