@@ -1,3 +1,4 @@
+/* ✅ UPDATED styles.css (copy/paste entire file) */
 :root{
   --bg:#0b0f14;
   --card:#0f141b;
@@ -7,11 +8,10 @@
   --gap:18px;
   --radius:12px;
 
-  /* ✅ sizing (prevents stretching) */
   --container: 1200px;
   --mapH: clamp(260px, 38vh, 420px);
 
-  /* ✅ one shared height for YouTube + right column */
+  /* one shared height for the whole row */
   --rowH: clamp(520px, 62vh, 680px);
 }
 
@@ -79,7 +79,7 @@ body{
   gap:var(--gap);
 }
 
-/* DASHBOARD: YouTube left + 3 equal panels right */
+/* DASHBOARD: YouTube left + panels right */
 .dashboard{
   width:100%;
   display:grid;
@@ -159,7 +159,6 @@ body{
   opacity:1;
 }
 
-/* player fills remaining space */
 .player{
   flex:1 1 auto;
   min-height:0;
@@ -183,16 +182,17 @@ iframe{
   flex:0 0 auto;
 }
 
-/* RIGHT: 3 equal panels stacked */
+/* RIGHT: 3 PANELS SIDE BY SIDE */
 .right-col{
-  height:var(--rowH);                 /* ✅ match YouTube height */
+  height:var(--rowH);
   display:grid;
-  grid-template-rows:repeat(3, 1fr);  /* ✅ 3 same-size blocks */
+  grid-template-columns: repeat(3, 1fr);
   gap:var(--gap);
   min-height:0;
 }
 
 .panel{
+  height:100%;
   border:1px solid var(--border);
   border-radius:var(--radius);
   overflow:hidden;
@@ -238,7 +238,7 @@ iframe{
   white-space:nowrap;
 }
 
-/* ✅ ONLY list scrolls */
+/* only the list scrolls */
 .panel-body{
   padding:12px;
   display:flex;
@@ -347,7 +347,7 @@ iframe{
 /* Mobile */
 @media (max-width:1000px){
   .dashboard{ grid-template-columns:1fr; }
-  .right-col{ height:auto; grid-template-rows:auto; }
+  .right-col{ height:auto; grid-template-columns:1fr; }
   .news-block{ height: clamp(420px, 55vh, 620px); }
   .panel{ height: clamp(240px, 30vh, 340px); }
 }
