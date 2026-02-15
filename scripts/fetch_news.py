@@ -1,29 +1,3 @@
-# scripts/fetch_news.py
-# ------------------------------------------------------------
-# GitHub Actions friendly NewsData fetcher
-# - NO Streamlit
-# - Fetches headlines from newsdata.io
-# - Builds a clean summary paragraph using lightweight clustering
-# - Writes: data/top_news.json
-#
-# Required env:
-#   NEWSDATA_API_KEY
-#
-# Optional env (safe defaults):
-#   NEWS_LANGUAGE=en
-#   NEWS_CATEGORY= (empty = all)
-#   NEWS_N=60
-#
-# Output schema (matches your index.html loader):
-# {
-#   "generated_at_utc": "...",
-#   "category": "...",
-#   "language": "...",
-#   "summary": "...",
-#   "articles": [{title, link, source, pubDate}, ...]
-# }
-# ------------------------------------------------------------
-
 import os
 import re
 import json
@@ -32,38 +6,14 @@ import requests
 from collections import Counter
 from datetime import datetime, timezone
 
-
 BASE_URL = "https://newsdata.io/api/1/latest"
 
-
-# -----------------------------
-# Rate-limit friendly fetch
-# -----------------------------
-def _request_with_backoff(params: dict, max_retries: int = 3):
-    delay = 1.0
-    last_exc = None
-    for _ in range(max_retries + 1):
-        try:
-            r = requests.get(BASE_URL, params=params, timeout=30)
-            if r.status_code == 429:
-                time.sleep(delay)
-                delay *= 2
-                continue
-            r.raise_for_status()
-            return r.json()
-        except Exception as e:
-            last_exc = e
-            time.sleep(delay)
-            delay *= 2
-    raise last_exc
-
-
-def fetch_top_n(api_key: str, n: int, language: str, category: str | None):
+# -------------------------------------------------
+# Fetch headlines
+# -------------------------------------------------
+def fetch_top_n(api_key: str, n: int = 100, language: str = "en", max_calls: int = 4, category: str | None = None):
     items = []
     page_token = None
-
-    # Keep conservative to avoid rate limits
-    max_calls = 4
 
     for _ in range(max_calls):
         params = {"apikey": api_key, "language": language}
@@ -72,11 +22,15 @@ def fetch_top_n(api_key: str, n: int, language: str, category: str | None):
         if page_token:
             params["page"] = page_token
 
-        data = _request_with_backoff(params, max_retries=2)
+        r = requests.get(BASE_URL, params=params, timeout=30)
+        r.raise_for_status()
+        data = r.json()
+
         if data.get("status") != "success":
             raise RuntimeError(str(data))
 
         items.extend(data.get("results") or [])
+
         if len(items) >= n:
             break
 
@@ -86,10 +40,9 @@ def fetch_top_n(api_key: str, n: int, language: str, category: str | None):
 
     return items[:n]
 
-
-# -----------------------------
+# -------------------------------------------------
 # Text utilities
-# -----------------------------
+# -------------------------------------------------
 STOP = set("""
 a an the and or but if then than so to of in on for with from by at as is are was were be been being
 this that these those it its into over under about across after before during between also not no
@@ -98,7 +51,7 @@ can could would should may might will just more most much very per via
 
 SPORTS = set("""
 nba nfl nhl mlb match game games season playoff all-star dunk overtime quarter finals championship
-wrestle wrestling division scoreboard wildcats lakers nascar daytona
+wrestle wrestling division scoreboard wildcats lakers
 """.split())
 
 LIFESTYLE_LOCAL = set("""
@@ -134,10 +87,9 @@ def is_low_signal(title: str, desc: str) -> bool:
         return True
     return False
 
-
-# -----------------------------
+# -------------------------------------------------
 # Storyline clustering
-# -----------------------------
+# -------------------------------------------------
 def jaccard(a, b):
     A, B = set(a), set(b)
     if not A or not B:
@@ -197,7 +149,7 @@ def representative_title(cluster):
         return sum(counts.get(w, 0) for w in tokenize(t))
     rows = cluster["rows"]
     rows_sorted = sorted(rows, key=lambda r: (-score(r.get("title","")), len(r.get("title","") or "")))
-    return (rows_sorted[0].get("title","") or "").strip()
+    return rows_sorted[0].get("title","")
 
 def build_clean_paragraph(rows):
     if not rows:
@@ -227,11 +179,7 @@ def build_clean_paragraph(rows):
     lines = []
     for c in chosen:
         rep = representative_title(c)
-        if rep:
-            lines.append(f"{c['topic']}: {rep}")
-
-    while len(lines) < 3:
-        lines.append("Other: Additional headlines are mixed and do not cluster cleanly.")
+        lines.append(f"{c['topic']}: {rep}")
 
     return (
         "The current headlines point to several parallel developments. "
@@ -239,55 +187,25 @@ def build_clean_paragraph(rows):
         "Taken together, the feed reflects a dispersed news cycle rather than a single dominant global event."
     )
 
+# -------------------------------------------------
+# Write JSON for dashboard
+# -------------------------------------------------
+def main():
+    api_key = os.getenv("NEWSDATA_API_KEY")
+    if not api_key:
+        raise SystemExit("Missing NEWSDATA_API_KEY")
 
-# -----------------------------
-# Write JSON for your dashboard
-# -----------------------------
-def write_top_news_json(results, language: str, category: str | None, out_path: str = "data/top_news.json"):
-    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    results = fetch_top_n(api_key, n=100, language="en")
 
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "language": language,
-        "category": category or "(all)",
         "summary": build_clean_paragraph(results),
-        # keep keys compatible with your current index.html renderer
-        "articles": [
-            {
-                "title": a.get("title", "Untitled"),
-                "link": a.get("link", ""),
-                "source": a.get("source_id", a.get("source", "")),
-                "pubDate": a.get("pubDate", a.get("published_at", ""))
-            }
-            for a in results[:10]
-        ]
+        "articles": results[:10]
     }
 
-    with open(out_path, "w", encoding="utf-8") as f:
+    os.makedirs("data", exist_ok=True)
+    with open("data/top_news.json", "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
-
-    print(f"✅ wrote {out_path} with {len(payload['articles'])} articles")
-
-
-def main():
-    api_key = os.getenv("NEWSDATA_API_KEY", "").strip()
-    if not api_key:
-        raise SystemExit("Missing NEWSDATA_API_KEY (set it in GitHub Actions Secrets).")
-
-    language = os.getenv("NEWS_LANGUAGE", "en").strip() or "en"
-
-    raw_category = os.getenv("NEWS_CATEGORY", "").strip()
-    category = raw_category if raw_category and raw_category != "(all)" else None
-
-    try:
-        n = int(os.getenv("NEWS_N", "60"))
-    except ValueError:
-        n = 60
-    n = max(20, min(100, n))
-
-    results = fetch_top_n(api_key, n=n, language=language, category=category)
-    write_top_news_json(results, language=language, category=category, out_path="data/top_news.json")
-
 
 if __name__ == "__main__":
     main()
