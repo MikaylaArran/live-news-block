@@ -1,4 +1,4 @@
-<!-- index.html (FULL FILE - UPDATED) -->
+<!-- index.html (FULL FILE - UPDATED FOR YOUR JSON) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -274,7 +274,6 @@
     }
     .panel-body::-webkit-scrollbar-thumb:hover{
       background:rgba(255,255,255,0.28);
-      border-radius:999px;
     }
 
     .country-card, .news-item{
@@ -628,7 +627,7 @@
       }
     })();
 
-    /* ---------- TOP NEWS (FIXED: loads data/top_news.json) ---------- */
+    /* ---------- TOP NEWS (MATCHES YOUR JSON) ---------- */
     const newsCategoryEl = document.getElementById("newsCategory");
     const newsNEl = document.getElementById("newsN");
     const newsRefreshBtn = document.getElementById("newsRefresh");
@@ -639,36 +638,10 @@
       }[c]));
     }
 
-    function buildNewsPath(){
-      // ✅ always use the file you actually have in your repo
-      return `data/top_news.json`;
-    }
-
-    async function loadTopNewsSelected(){
-      const path = buildNewsPath();
-      const res = await fetch(path + "?ts=" + Date.now(), { cache: "no-store" });
-      if (!res.ok) throw new Error("Missing " + path);
+    async function loadTopNews(){
+      const res = await fetch("data/top_news.json?ts=" + Date.now(), { cache: "no-store" });
+      if (!res.ok) throw new Error("Missing data/top_news.json");
       return await res.json();
-    }
-
-    function normalizeArticles(payload){
-      if (Array.isArray(payload)) return payload;
-      return payload?.articles || payload?.results || payload?.items || [];
-    }
-
-    function matchesCategory(article, selectedCat){
-      if (selectedCat === "all") return true;
-
-      // category can be string or array depending on source
-      if (Array.isArray(article.category)) {
-        return article.category.map(x => String(x).toLowerCase()).includes(selectedCat);
-      }
-
-      const cat = String(
-        article.category ?? article.categories ?? article.topic ?? article.section ?? ""
-      ).toLowerCase();
-
-      return cat.includes(selectedCat);
     }
 
     function renderTopNews(payload){
@@ -676,6 +649,7 @@
       const updated = document.getElementById("topNewsUpdated");
       list.innerHTML = "";
 
+      // timestamp
       if (payload?.generated_at_utc) {
         const dt = new Date(payload.generated_at_utc);
         updated.textContent = (!isNaN(dt)) ? ("Updated " + dt.toLocaleString()) : ("Updated " + payload.generated_at_utc);
@@ -683,25 +657,36 @@
         updated.textContent = "Updated (no timestamp)";
       }
 
-      const selectedCat = newsCategoryEl.value;
+      // summary card
+      if (payload?.summary) {
+        const summary = document.createElement("div");
+        summary.className = "news-item";
+        summary.innerHTML = `
+          <div class="summary-title">Summary</div>
+          <div class="summary-text">${safeText(payload.summary)}</div>
+          <div class="news-meta">
+            ${payload?.category ? safeText(payload.category) : ""}${payload?.language ? ` | ${safeText(payload.language)}` : ""}
+          </div>
+        `;
+        list.appendChild(summary);
+      }
+
       const n = parseInt(newsNEl.value, 10) || 60;
 
-      let articles = normalizeArticles(payload);
-      articles = articles.filter(a => matchesCategory(a, selectedCat));
-
+      // your JSON uses "articles"
+      const articles = payload?.articles || [];
       if (!articles.length){
-        list.innerHTML = `
+        list.innerHTML += `
           <div class="news-item">
             <strong>No news found.</strong>
-            <div class="news-meta">
-              Either the JSON has no articles, or your articles don’t include category fields that match “${safeText(selectedCat)}”.
-            </div>
+            <div class="news-meta">The JSON exists but has no articles.</div>
           </div>
         `;
         return;
       }
 
-      // show first N available, but render top 10 on screen (change if you want)
+      // NOTE: your articles don’t include per-article categories, so the category dropdown can’t truly filter yet.
+      // We keep the dropdown for UI, but we won’t filter based on it until you add category per article.
       const display = articles.slice(0, Math.min(n, 10));
 
       display.forEach(a => {
@@ -709,9 +694,9 @@
         item.className = "news-item";
 
         const title = a.title || "Untitled";
-        const link = a.url || a.link || "";
-        const source = a.source || a.source_id || a.sourceId || a.source_name || "";
-        const pubDate = a.published_at || a.pubDate || a.publishedAt || a.date || "";
+        const link = a.link || "";
+        const source = a.source || "";
+        const pubDate = a.pubDate || "";
 
         item.innerHTML = `
           <div>
@@ -729,7 +714,7 @@
     async function refreshTopNews(){
       try {
         document.getElementById("topNewsUpdated").textContent = "Loading…";
-        const payload = await loadTopNewsSelected();
+        const payload = await loadTopNews();
         renderTopNews(payload);
       } catch (e) {
         document.getElementById("topNewsUpdated").textContent = "No data yet";
