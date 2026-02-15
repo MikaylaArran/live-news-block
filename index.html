@@ -1,3 +1,4 @@
+<!-- index.html (FULL FILE) -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -364,6 +365,20 @@
       color:rgba(255,255,255,0.6);
     }
 
+    /* NEW: summary card styling */
+    .summary-title{
+      letter-spacing: .12em;
+      font-size: 12px;
+      opacity: .85;
+      margin-bottom: 6px;
+      text-transform: uppercase;
+    }
+    .summary-text{
+      font-size: 13px;
+      line-height: 1.35;
+      color: rgba(255,255,255,0.86);
+    }
+
     @media (max-width:1000px){
       .dashboard{ grid-template-columns:1fr; }
       .right-col{ height:auto; grid-template-rows:auto; }
@@ -569,11 +584,17 @@
       }
     })();
 
-    /* ---------- TOP 10 NEWS ---------- */
+    /* ---------- TOP 10 NEWS (UPDATED: supports summary + NewsData schema) ---------- */
     async function loadTopNewsFromJson(){
       const res = await fetch("data/top_news.json?ts=" + Date.now());
       if (!res.ok) throw new Error("top_news.json not found");
       return await res.json();
+    }
+
+    function safeText(s){
+      return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[c]));
     }
 
     function renderTopNews(payload){
@@ -588,11 +609,30 @@
         updated.textContent = "No timestamp";
       }
 
-      const articles = payload?.articles || payload?.items || payload?.results || [];
+      // 1) Summary card (if present)
+      if (payload?.summary) {
+        const summary = document.createElement("div");
+        summary.className = "news-item";
+        summary.innerHTML = `
+          <div class="summary-title">Summary</div>
+          <div class="summary-text">${safeText(payload.summary)}</div>
+          <div class="news-meta">${payload?.category ? safeText(payload.category) : ""}${payload?.language ? ` | ${safeText(payload.language)}` : ""}</div>
+        `;
+        list.appendChild(summary);
+      }
+
+      // 2) Articles array: accept multiple possible key names
+      const articles =
+        payload?.articles ||
+        payload?.results ||
+        payload?.items ||
+        payload?.data ||
+        [];
+
       if (!articles.length){
         const empty = document.createElement("div");
         empty.className = "news-item";
-        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">Create <code>data/top_news.json</code>.</div>`;
+        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">Run the Python updater to create <code>data/top_news.json</code>.</div>`;
         list.appendChild(empty);
         return;
       }
@@ -602,18 +642,18 @@
         item.className = "news-item";
 
         const title = a.title || "Untitled";
-        const link = a.link || a.url || "";
-        const source = a.source || a.source_id || "";
-        const pubDate = a.pubDate || a.published_at || a.publishedAt || "";
+        const link = a.url || a.link || "";
+        const source = a.source || a.source_id || a.sourceId || "";
+        const pubDate = a.published_at || a.pubDate || a.publishedAt || "";
 
         item.innerHTML = `
           <div>
             ${link
-              ? `<a href="${link}" target="_blank" rel="noopener noreferrer"><strong>${title}</strong></a>`
-              : `<strong>${title}</strong>`
+              ? `<a href="${safeText(link)}" target="_blank" rel="noopener noreferrer"><strong>${safeText(title)}</strong></a>`
+              : `<strong>${safeText(title)}</strong>`
             }
           </div>
-          <div class="news-meta">${pubDate}${source ? ` | ${source}` : ""}</div>
+          <div class="news-meta">${safeText(pubDate)}${source ? ` | ${safeText(source)}` : ""}</div>
         `;
         list.appendChild(item);
       });
@@ -628,7 +668,7 @@
         document.getElementById("topNewsList").innerHTML = `
           <div class="news-item">
             <strong>Top news data not found.</strong>
-            <div class="news-meta">Create <code>data/top_news.json</code> then refresh.</div>
+            <div class="news-meta">Run the Python updater to create <code>data/top_news.json</code> then refresh.</div>
           </div>
         `;
       }
