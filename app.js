@@ -78,3 +78,55 @@ async function createTabs() {
 }
 
 createTabs();
+
+// -----------------------------
+// TOP NEWS (loads from /data/top_news.json)
+// -----------------------------
+async function loadTopNews() {
+  const topNewsBox = document.getElementById("topNewsContent"); // you must have this div in index.html
+  if (!topNewsBox) return;
+
+  const url = `data/top_news.json?v=${Date.now()}`; // cache-buster for GitHub Pages
+
+  try {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+    const data = await res.json();
+
+    // supports either {articles:[...]} or [...] directly
+    const articles = Array.isArray(data) ? data : (data.articles || []);
+    if (!articles.length) {
+      topNewsBox.innerHTML = `<div class="muted">No top news yet.</div>`;
+      return;
+    }
+
+    topNewsBox.innerHTML = articles.slice(0, 10).map(a => {
+      const title = a.title || "Untitled";
+      const source = a.source || a.source_name || "";
+      const link = a.link || a.url || "#";
+      const date = a.pubDate || a.publishedAt || "";
+
+      return `
+        <a class="news-item" href="${link}" target="_blank" rel="noopener">
+          <div class="news-title">${title}</div>
+          <div class="news-meta">${source}${date ? " • " + date : ""}</div>
+        </a>
+      `;
+    }).join("");
+
+  } catch (err) {
+    console.error("Top News load error:", err);
+    topNewsBox.innerHTML = `
+      <div class="muted">
+        Top news data not found.<br>
+        Expected <code>data/top_news.json</code>
+      </div>
+    `;
+  }
+}
+
+// load once on start (and refresh every 5 mins)
+loadTopNews();
+setInterval(loadTopNews, 5 * 60 * 1000);
+
