@@ -237,6 +237,8 @@
       align-items:center;
       gap:8px;
       flex:0 0 auto;
+      flex-wrap:wrap; /* helps on narrow widths */
+      justify-content:flex-end;
     }
 
     .badge{
@@ -379,6 +381,29 @@
       color: rgba(255,255,255,0.86);
     }
 
+    /* NEW: Top News controls */
+    .news-select{
+      background: rgba(0,0,0,0.35);
+      color: rgba(255,255,255,0.92);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 12px;
+      outline: none;
+    }
+    .news-btn{
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.92);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 6px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
+    .news-btn:hover{
+      background: rgba(255,255,255,0.14);
+    }
+
     @media (max-width:1000px){
       .dashboard{ grid-template-columns:1fr; }
       .right-col{ height:auto; grid-template-rows:auto; }
@@ -439,8 +464,26 @@
 
         <div class="panel" id="topNewsPanel">
           <div class="panel-header">
-            <div class="panel-title">TOP 10 NEWS</div>
+            <div class="panel-title">TOP NEWS</div>
             <div class="meta-right">
+              <select class="news-select" id="newsCategory">
+                <option value="all">All</option>
+                <option value="world">World</option>
+                <option value="politics">Politics</option>
+                <option value="business">Business</option>
+                <option value="technology">Technology</option>
+                <option value="environment">Environment</option>
+              </select>
+
+              <select class="news-select" id="newsN">
+                <option value="20">20</option>
+                <option value="40">40</option>
+                <option value="60" selected>60</option>
+                <option value="100">100</option>
+              </select>
+
+              <button class="news-btn" id="newsRefresh">Refresh</button>
+
               <span class="badge" id="topNewsUpdated">Loading…</span>
             </div>
           </div>
@@ -584,17 +627,28 @@
       }
     })();
 
-    /* ---------- TOP 10 NEWS (UPDATED: supports summary + NewsData schema) ---------- */
-    async function loadTopNewsFromJson(){
-      const res = await fetch("data/top_news.json?ts=" + Date.now());
-      if (!res.ok) throw new Error("top_news.json not found");
-      return await res.json();
-    }
+    /* ---------- TOP NEWS (Category + N + Refresh) ---------- */
+    const newsCategoryEl = document.getElementById("newsCategory");
+    const newsNEl = document.getElementById("newsN");
+    const newsRefreshBtn = document.getElementById("newsRefresh");
 
     function safeText(s){
       return String(s ?? "").replace(/[&<>"']/g, (c) => ({
         "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
       }[c]));
+    }
+
+    function buildNewsPath(){
+      const cat = newsCategoryEl.value; // all/world/...
+      const n = newsNEl.value;          // 20/40/60/100
+      return `data/top_news_${cat}_${n}.json`;
+    }
+
+    async function loadTopNewsSelected(){
+      const path = buildNewsPath();
+      const res = await fetch(path + "?ts=" + Date.now());
+      if (!res.ok) throw new Error("Missing " + path);
+      return await res.json();
     }
 
     function renderTopNews(payload){
@@ -609,30 +663,23 @@
         updated.textContent = "No timestamp";
       }
 
-      // 1) Summary card (if present)
+      // Summary card
       if (payload?.summary) {
         const summary = document.createElement("div");
         summary.className = "news-item";
         summary.innerHTML = `
           <div class="summary-title">Summary</div>
           <div class="summary-text">${safeText(payload.summary)}</div>
-          <div class="news-meta">${payload?.category ? safeText(payload.category) : ""}${payload?.language ? ` | ${safeText(payload.language)}` : ""}</div>
+          <div class="news-meta">${payload?.category ? safeText(payload.category) : ""}${payload?.language ? ` | ${safeText(payload.language)}` : ""}${payload?.n ? ` | N=${safeText(payload.n)}` : ""}</div>
         `;
         list.appendChild(summary);
       }
 
-      // 2) Articles array: accept multiple possible key names
-      const articles =
-        payload?.articles ||
-        payload?.results ||
-        payload?.items ||
-        payload?.data ||
-        [];
-
+      const articles = payload?.articles || payload?.results || payload?.items || [];
       if (!articles.length){
         const empty = document.createElement("div");
         empty.className = "news-item";
-        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">Run the Python updater to create <code>data/top_news.json</code>.</div>`;
+        empty.innerHTML = `<strong>No news found.</strong><div class="news-meta">The JSON exists but has no articles.</div>`;
         list.appendChild(empty);
         return;
       }
@@ -659,20 +706,27 @@
       });
     }
 
-    (async () => {
+    async function refreshTopNews(){
       try {
-        const payload = await loadTopNewsFromJson();
+        document.getElementById("topNewsUpdated").textContent = "Loading…";
+        const payload = await loadTopNewsSelected();
         renderTopNews(payload);
       } catch (e) {
         document.getElementById("topNewsUpdated").textContent = "No data yet";
         document.getElementById("topNewsList").innerHTML = `
           <div class="news-item">
             <strong>Top news data not found.</strong>
-            <div class="news-meta">Run the Python updater to create <code>data/top_news.json</code> then refresh.</div>
+            <div class="news-meta">${safeText(e.message)}</div>
+            <div class="news-meta">Your GitHub Action must generate files like <code>data/top_news_world_60.json</code>.</div>
           </div>
         `;
       }
-    })();
+    }
+
+    newsCategoryEl.addEventListener("change", refreshTopNews);
+    newsNEl.addEventListener("change", refreshTopNews);
+    newsRefreshBtn.addEventListener("click", refreshTopNews);
+    refreshTopNews(); // initial
 
     /* ---------- WORLD MAP ---------- */
     const map = L.map("worldMap", {
