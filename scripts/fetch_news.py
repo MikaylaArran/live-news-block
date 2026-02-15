@@ -9,6 +9,10 @@ from datetime import datetime, timezone
 
 BASE_URL = "https://newsdata.io/api/1/latest"
 
+# Dropdown options from your index.html
+CATEGORIES = ["all", "world", "politics", "business", "technology", "environment"]
+N_VALUES = [20, 40, 60, 100]
+
 # -----------------------------
 # Fetch headlines (with gentle backoff)
 # -----------------------------
@@ -36,8 +40,11 @@ def fetch_top_n(api_key: str, n: int = 100, language: str = "en", max_calls: int
 
     for _ in range(max_calls):
         params = {"apikey": api_key, "language": language}
+
+        # NewsData expects category only when not "all"
         if category:
             params["category"] = category
+
         if page_token:
             params["page"] = page_token
 
@@ -57,7 +64,7 @@ def fetch_top_n(api_key: str, n: int = 100, language: str = "en", max_calls: int
     return items[:n]
 
 # -----------------------------
-# Text utilities (your clustering)
+# Text utilities (clustering)
 # -----------------------------
 STOP = set("""
 a an the and or but if then than so to of in on for with from by at as is are was were be been being
@@ -205,20 +212,9 @@ def build_clean_paragraph(rows):
     )
 
 # -----------------------------
-# Write JSON (MATCHES index.html)
+# Write JSON (for index.html)
 # -----------------------------
-def main():
-    api_key = os.getenv("NEWSDATA_API_KEY", "").strip()
-    if not api_key:
-        raise SystemExit("Missing NEWSDATA_API_KEY")
-
-    language = (os.getenv("NEWS_LANGUAGE", "en") or "en").strip()
-    category = (os.getenv("NEWS_CATEGORY", "") or "").strip() or None
-    n = int(os.getenv("NEWS_N", "100"))
-
-    results = fetch_top_n(api_key, n=n, language=language, category=category)
-
-    # Map to the exact fields your dashboard reads
+def write_payload(path: str, language: str, category_label: str, n: int, results: list):
     articles = []
     for a in results[:10]:
         articles.append({
@@ -231,16 +227,46 @@ def main():
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "language": language,
-        "category": category or "(all)",
+        "category": category_label,
+        "n": n,
         "summary": build_clean_paragraph(results),
         "articles": articles
     }
 
-    os.makedirs("data", exist_ok=True)
-    with open("data/top_news.json", "w", encoding="utf-8") as f:
+    with open(path, "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
 
-    print("✅ Wrote data/top_news.json")
+def main():
+    api_key = os.getenv("NEWSDATA_API_KEY", "").strip()
+    if not api_key:
+        raise SystemExit("Missing NEWSDATA_API_KEY")
+
+    language = (os.getenv("NEWS_LANGUAGE", "en") or "en").strip()
+
+    os.makedirs("data", exist_ok=True)
+
+    # Generate all category + N combos for your dropdown
+    written = 0
+    for cat in CATEGORIES:
+        cat_param = None if cat == "all" else cat
+
+        for n in N_VALUES:
+            results = fetch_top_n(api_key, n=n, language=language, category=cat_param)
+            out_path = f"data/top_news_{cat}_{n}.json"
+            write_payload(out_path, language, cat, n, results)
+            written += 1
+            print(f"✅ Wrote {out_path}")
+
+    # Also write a fallback file (optional) so older code still works
+    # Default: all_60
+    default_path = "data/top_news.json"
+    with open(f"data/top_news_all_60.json", "r", encoding="utf-8") as src:
+        default_payload = json.load(src)
+    with open(default_path, "w", encoding="utf-8") as dst:
+        json.dump(default_payload, dst, ensure_ascii=False, indent=2)
+    print("✅ Wrote data/top_news.json (alias of top_news_all_60.json)")
+
+    print(f"✅ Done. Generated {written} files.")
 
 if __name__ == "__main__":
     main()
