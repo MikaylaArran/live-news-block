@@ -1,3 +1,4 @@
+# scripts/fetch_news.py
 import os
 import re
 import json
@@ -8,9 +9,27 @@ from datetime import datetime, timezone
 
 BASE_URL = "https://newsdata.io/api/1/latest"
 
-# -------------------------------------------------
-# Fetch headlines
-# -------------------------------------------------
+# -----------------------------
+# Fetch headlines (with gentle backoff)
+# -----------------------------
+def _request_with_backoff(params: dict, max_retries: int = 3):
+    delay = 1.0
+    last_exc = None
+    for _ in range(max_retries + 1):
+        try:
+            r = requests.get(BASE_URL, params=params, timeout=30)
+            if r.status_code == 429:
+                time.sleep(delay)
+                delay *= 2
+                continue
+            r.raise_for_status()
+            return r.json()
+        except Exception as e:
+            last_exc = e
+            time.sleep(delay)
+            delay *= 2
+    raise last_exc
+
 def fetch_top_n(api_key: str, n: int = 100, language: str = "en", max_calls: int = 4, category: str | None = None):
     items = []
     page_token = None
@@ -22,10 +41,7 @@ def fetch_top_n(api_key: str, n: int = 100, language: str = "en", max_calls: int
         if page_token:
             params["page"] = page_token
 
-        r = requests.get(BASE_URL, params=params, timeout=30)
-        r.raise_for_status()
-        data = r.json()
-
+        data = _request_with_backoff(params, max_retries=2)
         if data.get("status") != "success":
             raise RuntimeError(str(data))
 
@@ -40,9 +56,9 @@ def fetch_top_n(api_key: str, n: int = 100, language: str = "en", max_calls: int
 
     return items[:n]
 
-# -------------------------------------------------
-# Text utilities
-# -------------------------------------------------
+# -----------------------------
+# Text utilities (your clustering)
+# -----------------------------
 STOP = set("""
 a an the and or but if then than so to of in on for with from by at as is are was were be been being
 this that these those it its into over under about across after before during between also not no
@@ -51,7 +67,7 @@ can could would should may might will just more most much very per via
 
 SPORTS = set("""
 nba nfl nhl mlb match game games season playoff all-star dunk overtime quarter finals championship
-wrestle wrestling division scoreboard wildcats lakers
+wrestle wrestling division scoreboard wildcats lakers nascar daytona
 """.split())
 
 LIFESTYLE_LOCAL = set("""
@@ -87,9 +103,6 @@ def is_low_signal(title: str, desc: str) -> bool:
         return True
     return False
 
-# -------------------------------------------------
-# Storyline clustering
-# -------------------------------------------------
 def jaccard(a, b):
     A, B = set(a), set(b)
     if not A or not B:
@@ -149,7 +162,7 @@ def representative_title(cluster):
         return sum(counts.get(w, 0) for w in tokenize(t))
     rows = cluster["rows"]
     rows_sorted = sorted(rows, key=lambda r: (-score(r.get("title","")), len(r.get("title","") or "")))
-    return rows_sorted[0].get("title","")
+    return (rows_sorted[0].get("title","") or "").strip()
 
 def build_clean_paragraph(rows):
     if not rows:
@@ -179,7 +192,11 @@ def build_clean_paragraph(rows):
     lines = []
     for c in chosen:
         rep = representative_title(c)
-        lines.append(f"{c['topic']}: {rep}")
+        if rep:
+            lines.append(f"{c['topic']}: {rep}")
+
+    while len(lines) < 3:
+        lines.append("Other: Additional headlines are mixed and do not cluster cleanly.")
 
     return (
         "The current headlines point to several parallel developments. "
@@ -187,25 +204,43 @@ def build_clean_paragraph(rows):
         "Taken together, the feed reflects a dispersed news cycle rather than a single dominant global event."
     )
 
-# -------------------------------------------------
-# Write JSON for dashboard
-# -------------------------------------------------
+# -----------------------------
+# Write JSON (MATCHES index.html)
+# -----------------------------
 def main():
-    api_key = os.getenv("NEWSDATA_API_KEY")
+    api_key = os.getenv("NEWSDATA_API_KEY", "").strip()
     if not api_key:
         raise SystemExit("Missing NEWSDATA_API_KEY")
 
-    results = fetch_top_n(api_key, n=100, language="en")
+    language = (os.getenv("NEWS_LANGUAGE", "en") or "en").strip()
+    category = (os.getenv("NEWS_CATEGORY", "") or "").strip() or None
+    n = int(os.getenv("NEWS_N", "100"))
+
+    results = fetch_top_n(api_key, n=n, language=language, category=category)
+
+    # Map to the exact fields your dashboard reads
+    articles = []
+    for a in results[:10]:
+        articles.append({
+            "title": a.get("title", "Untitled"),
+            "link": a.get("link", "") or a.get("url", ""),
+            "source": a.get("source_id", "") or a.get("source", ""),
+            "pubDate": a.get("pubDate", "") or a.get("published_at", "") or a.get("publishedAt", "")
+        })
 
     payload = {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "language": language,
+        "category": category or "(all)",
         "summary": build_clean_paragraph(results),
-        "articles": results[:10]
+        "articles": articles
     }
 
     os.makedirs("data", exist_ok=True)
     with open("data/top_news.json", "w", encoding="utf-8") as f:
         json.dump(payload, f, ensure_ascii=False, indent=2)
+
+    print("✅ Wrote data/top_news.json")
 
 if __name__ == "__main__":
     main()
